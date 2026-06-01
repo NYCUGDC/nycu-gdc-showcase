@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Performance · NYCU GDC Showcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=JetBrains+Mono:wght@300;400;500&family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@300;400;600;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/tokens.css">
+<style>
+  body { background: var(--bg-deeper); }
+
+  /* Top progress bar */
+  .stage-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 56px;
+    background: rgba(10,10,16,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--paper-line);
+    display: flex;
+    align-items: center;
+    padding: 0 var(--pad-edge);
+    z-index: 100;
+    gap: 24px;
+  }
+  .stage-bar a.home {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--paper-dim);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .stage-bar a.home:hover { color: var(--gdc-orange); }
+  .progress-track {
+    flex: 1;
+    height: 2px;
+    background: var(--paper-line);
+    position: relative;
+    overflow: hidden;
+  }
+  .progress-fill {
+    position: absolute;
+    inset: 0;
+    background: var(--gdc-orange);
+    transform-origin: left;
+    transform: scaleX(0);
+    transition: transform 0.1s linear;
+  }
+  .progress-marks {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+  .progress-marks > span {
+    width: 1px;
+    background: var(--bg-deeper);
+  }
+  .stage-counter {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    color: var(--paper-dim);
+    min-width: 80px;
+    text-align: right;
+  }
+
+  /* Spotlight that follows cursor */
+  .spotlight {
+    position: fixed;
+    pointer-events: none;
+    width: 800px; height: 800px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0) 60%);
+    transform: translate(-50%, -50%);
+    z-index: 5;
+    mix-blend-mode: screen;
+  }
+
+  /* === Sections === */
+  section.act {
+    min-height: 100vh;
+    padding: 120px var(--pad-edge) 100px;
+    position: relative;
+    border-bottom: 1px dashed var(--paper-line);
+  }
+
+  /* Curtain (overture) */
+  .overture {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    background:
+      radial-gradient(ellipse at top, oklch(0.22 0.02 260) 0%, var(--bg-deeper) 70%);
+  }
+  .overture .meta {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gdc-orange);
+    margin-bottom: 32px;
+  }
+  .overture h1 {
+    font-family: var(--f-serif);
+    font-size: clamp(48px, 9vw, 140px);
+    font-weight: 900;
+    line-height: 0.95;
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+  .overture h1 em {
+    color: var(--gdc-orange);
+    font-style: italic;
+  }
+  .overture .sub {
+    margin-top: 24px;
+    color: var(--paper-dim);
+    font-size: 17px;
+    letter-spacing: 0.04em;
+  }
+  .overture .hand {
+    color: var(--gdc-blue);
+    font-size: 36px;
+    margin-top: 28px;
+    transform: rotate(-3deg);
+    display: inline-block;
+  }
+  .overture .scroll {
+    margin-top: 80px;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--paper-faint);
+  }
+  .overture .scroll::after {
+    content: "";
+    display: block;
+    width: 1px;
+    height: 60px;
+    background: linear-gradient(to bottom, var(--paper-faint), transparent);
+    margin: 16px auto 0;
+    animation: drop 2s ease-in-out infinite;
+  }
+  @keyframes drop {
+    0% { transform: scaleY(0); transform-origin: top; }
+    50% { transform: scaleY(1); transform-origin: top; }
+    51% { transform: scaleY(1); transform-origin: bottom; }
+    100% { transform: scaleY(0); transform-origin: bottom; }
+  }
+
+  /* Act title card */
+  .act-title-card {
+    min-height: 90vh;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 48px;
+    align-items: center;
+    padding: 100px var(--pad-edge);
+  }
+  .act-num {
+    font-family: var(--f-serif);
+    font-size: clamp(120px, 20vw, 320px);
+    font-weight: 300;
+    line-height: 0.9;
+    color: var(--paper-line);
+  }
+  .act-num.accent { color: var(--gdc-orange); }
+  .act-title-content .label {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--paper-faint);
+    margin-bottom: 16px;
+  }
+  .act-title-content h2 {
+    font-family: var(--f-serif);
+    font-size: clamp(40px, 7vw, 96px);
+    font-weight: 600;
+    line-height: 1;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .act-title-content .en {
+    font-family: var(--f-mono);
+    font-size: 15px;
+    color: var(--paper-faint);
+    margin-top: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .act-title-content .tagline {
+    font-family: var(--f-hand);
+    font-size: 32px;
+    color: var(--gdc-blue);
+    margin-top: 36px;
+    transform: rotate(-2deg);
+    display: inline-block;
+  }
+  .act-title-content .meta {
+    margin-top: 48px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 24px;
+    max-width: 720px;
+    border-top: 1px solid var(--paper-line);
+    padding-top: 24px;
+  }
+  .act-title-content .meta-item .k {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--paper-faint);
+    margin-bottom: 6px;
+  }
+  .act-title-content .meta-item .v {
+    font-size: 14px;
+    color: var(--paper);
+    line-height: 1.5;
+  }
+
+  /* World / concept beats */
+  .beat {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 80px;
+    max-width: 1400px;
+    margin: 0 auto;
+    align-items: start;
+  }
+  .beat .label-side {
+    position: sticky;
+    top: 100px;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--paper-faint);
+    border-top: 1px solid var(--gdc-orange);
+    padding-top: 16px;
+  }
+  .beat .label-side .num {
+    font-family: var(--f-serif);
+    font-size: 48px;
+    color: var(--paper);
+    margin-top: 12px;
+    line-height: 1;
+  }
+  .beat .content h3 {
+    font-family: var(--f-serif);
+    font-size: clamp(32px, 4vw, 56px);
+    font-weight: 600;
+    line-height: 1.15;
+    margin: 0 0 32px;
+    letter-spacing: -0.01em;
+  }
+  .beat .content p {
+    font-size: 18px;
+    line-height: 1.85;
+    color: var(--paper-dim);
+    max-width: 700px;
+  }
+  .beat .content p + p { margin-top: 20px; }
+
+  /* Hero visual placeholder */
+  .visual-block {
+    aspect-ratio: 16 / 9;
+    border: 1px solid var(--paper-line);
+    background:
+      repeating-linear-gradient(45deg,
+        transparent 0,
+        transparent 12px,
+        rgba(255,255,255,0.025) 12px,
+        rgba(255,255,255,0.025) 13px);
+    position: relative;
+    display: grid;
+    place-items: center;
+    margin: 32px 0;
+    overflow: hidden;
+  }
+  .visual-block .label-pill {
+    position: absolute;
+    top: 16px; left: 16px;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--paper-faint);
+    padding: 4px 10px;
+    border: 1px solid var(--paper-line);
+  }
+  .visual-block .center {
+    text-align: center;
+    color: var(--paper-faint);
+    font-family: var(--f-mono);
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .visual-block .big {
+    font-family: var(--f-serif);
+    font-size: 100px;
+    font-weight: 300;
+    color: var(--paper-line);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  /* Palette swatches */
+  .palette-row {
+    display: flex;
+    gap: 12px;
+    margin: 24px 0;
+    align-items: center;
+  }
+  .palette-row .sw {
+    width: 56px; height: 56px;
+    border: 1px solid var(--paper-line);
+  }
+  .palette-row .lbl {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--paper-faint);
+    letter-spacing: 0.18em;
+  }
+
+  /* Gameplay list */
+  .gameplay-list {
+    margin: 32px 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--paper-line);
+  }
+  .gameplay-list li {
+    padding: 18px 0;
+    border-bottom: 1px solid var(--paper-line);
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    gap: 24px;
+    align-items: center;
+    font-size: 16px;
+    color: var(--paper-dim);
+  }
+  .gameplay-list li .idx {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    color: var(--gdc-orange);
+  }
+
+  /* Team strip */
+  .team-strip {
+    margin: 32px 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1px;
+    background: var(--paper-line);
+    border: 1px solid var(--paper-line);
+  }
+  .team-strip .person {
+    background: var(--bg-rise);
+    padding: 24px;
+  }
+  .team-strip .person .role {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--paper-faint);
+    margin-bottom: 6px;
+  }
+  .team-strip .person .name {
+    font-family: var(--f-serif);
+    font-size: 22px;
+  }
+
+  /* Quote / review */
+  .review-card {
+    margin: 32px 0;
+    padding: 40px;
+    border: 1px solid var(--gdc-blue);
+    background: rgba(61, 181, 255, 0.04);
+    position: relative;
+  }
+  .review-card::before {
+    content: "“";
+    position: absolute;
+    top: -20px; left: 24px;
+    font-family: var(--f-serif);
+    font-size: 96px;
+    line-height: 1;
+    color: var(--gdc-blue);
+  }
+  .review-card .quote {
+    font-family: var(--f-serif);
+    font-size: 22px;
+    line-height: 1.6;
+    color: var(--paper);
+  }
+  .review-card .from {
+    margin-top: 16px;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--paper-faint);
+  }
+
+  /* CTA row */
+  .cta-row {
+    margin-top: 40px;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  /* Concept act styling */
+  .concept-act {
+    background: var(--bg-stage);
+  }
+  .concept-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 8px;
+    margin: 40px 0;
+  }
+  .concept-grid .pc {
+    aspect-ratio: 4 / 5;
+    background:
+      repeating-linear-gradient(35deg,
+        transparent 0,
+        transparent 10px,
+        rgba(255,255,255,0.04) 10px,
+        rgba(255,255,255,0.04) 11px);
+    border: 1px solid var(--paper-line);
+    position: relative;
+    display: flex;
+    align-items: end;
+    padding: 16px;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    color: var(--paper-faint);
+    letter-spacing: 0.18em;
+  }
+  .concept-grid .pc::before {
+    content: "";
+    position: absolute;
+    top: 16px; left: 16px;
+    width: 8px; height: 8px;
+    background: var(--gdc-orange);
+    border-radius: 50%;
+  }
+
+  /* Intermission divider */
+  .intermission {
+    min-height: 60vh;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    border-bottom: 1px dashed var(--paper-line);
+    background:
+      radial-gradient(ellipse at center, oklch(0.20 0.02 260) 0%, var(--bg-deeper) 70%);
+  }
+  .intermission .l {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gdc-orange);
+    margin-bottom: 20px;
+  }
+  .intermission h3 {
+    font-family: var(--f-serif);
+    font-size: clamp(36px, 6vw, 80px);
+    font-weight: 300;
+    margin: 0;
+    color: var(--paper);
+  }
+  .intermission .h {
+    font-family: var(--f-hand);
+    font-size: 32px;
+    color: var(--gdc-blue);
+    margin-top: 24px;
+    transform: rotate(-2deg);
+    display: inline-block;
+  }
+
+  /* Curtain call */
+  .curtain-call {
+    min-height: 90vh;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    padding: 120px var(--pad-edge);
+  }
+  .curtain-call h2 {
+    font-family: var(--f-serif);
+    font-size: clamp(48px, 9vw, 140px);
+    font-weight: 900;
+    margin: 0;
+    line-height: 0.95;
+  }
+  .curtain-call h2 em { color: var(--gdc-orange); font-style: italic; }
+  .curtain-call .sub {
+    margin-top: 32px;
+    color: var(--paper-dim);
+    font-size: 18px;
+    line-height: 1.7;
+    max-width: 640px;
+  }
+  .curtain-call .links {
+    margin-top: 48px;
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* Floating side controls */
+  .side-controls {
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .side-controls button {
+    width: 40px; height: 40px;
+    background: rgba(20,20,28,0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--paper-line);
+    color: var(--paper-dim);
+    cursor: pointer;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    transition: all 0.2s;
+  }
+  .side-controls button:hover { background: var(--gdc-orange); color: var(--bg-deeper); border-color: var(--gdc-orange); }
+
+  @media (max-width: 720px) {
+    .beat { grid-template-columns: 1fr; gap: 24px; }
+    .beat .label-side { position: static; }
+    .act-title-card { grid-template-columns: 1fr; }
+    .side-controls { display: none; }
+  }
+</style>
+</head>
+<body class="grain">
+
+<!-- Top progress bar -->
+<div class="stage-bar">
+  <a class="home" href="index.html">← 返回入口</a>
+  <div class="progress-track">
+    <div class="progress-fill" id="prog"></div>
+  </div>
+  <div class="stage-counter" id="counter">ACT 00 / 10</div>
+</div>
+
+<!-- Spotlight -->
+<div class="spotlight" id="spot"></div>
+
+<!-- Side controls -->
+<div class="side-controls">
+  <button id="btn-prev" title="上一幕">↑</button>
+  <button id="btn-next" title="下一幕">↓</button>
+  <button id="btn-gallery" title="切換到展場" onclick="location.href='gallery.html'">⊞</button>
+</div>
+
+<!-- ===== OVERTURE ===== -->
+<section class="overture act-anchor" data-act="00">
+  <div>
+    <div class="meta">OVERTURE · 序曲</div>
+    <h1>序幕：<br><em>請坐下</em>。</h1>
+    <div class="sub">接下來的 22 分鐘，由我們替你編排。</div>
+    <div class="hand" style="font-family:var(--f-hand);">enjoy the show.</div>
+    <div class="scroll">SCROLL TO BEGIN</div>
+  </div>
+</section>
+
+<!-- Acts injected here -->
+<div id="acts"></div>
+
+<!-- ===== CURTAIN CALL ===== -->
+<section class="curtain-call act-anchor" data-act="11">
+  <div>
+    <div class="mono" style="font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:var(--gdc-orange);margin-bottom:24px;">CURTAIN CALL · 謝幕</div>
+    <h2>謝謝你<br>看完<em>這一場</em>。</h2>
+    <div class="sub">如果有任何作品讓你停下、笑了、想了一下，那就值得。<br>歡迎到留言牆寫一句，或是回頭逛一次展場。</div>
+    <div class="links">
+      <a class="btn btn-primary" href="wall.html">→ 留下一句話</a>
+      <a class="btn" href="gallery.html">逛一次展場</a>
+      <a class="btn" href="archive.html">看作品索引</a>
+    </div>
+  </div>
+</section>
+
+<script src="data/exhibits.js"></script>
+<script>
+  // Build acts
+  const acts = document.getElementById('acts');
+  const intermissionEvery = 5;
+
+  window.EXHIBITS.forEach((e, i) => {
+    const num = String(i + 1).padStart(2, '0');
+    const isConcept = e.type === 'concept';
+
+    let html = '';
+
+    // Act title card
+    html += `
+      <section class="act-anchor" data-act="${num}" id="act-${e.id}">
+        <div class="act-title-card">
+          <div class="act-num accent">${e.no}</div>
+          <div class="act-title-content">
+            <div class="label">${isConcept ? 'CONCEPT' : 'GAME'} · ACT ${num}</div>
+            <h2>${e.title}</h2>
+            <div class="en">${e.titleEn} · ${isConcept ? e.medium : e.genre}</div>
+            <div class="tagline">「${e.tagline}」</div>
+            <div class="meta">
+              ${isConcept ? `
+                <div class="meta-item"><div class="k">Designers</div><div class="v">${e.designers.join(' · ')}</div></div>
+                <div class="meta-item"><div class="k">Medium</div><div class="v">${e.medium}</div></div>
+                <div class="meta-item"><div class="k">Sketches / Finals</div><div class="v">${e.sketches} / ${e.finals}</div></div>
+              ` : `
+                <div class="meta-item"><div class="k">Genre</div><div class="v">${e.genre}</div></div>
+                <div class="meta-item"><div class="k">Team Size</div><div class="v">${e.team.length} 人</div></div>
+                <div class="meta-item"><div class="k">Status</div><div class="v">${e.download}</div></div>
+              `}
+            </div>
+          </div>
+        </div>
+      </section>`;
+
+    // World / concept beat
+    html += `
+      <section class="act">
+        <div class="beat">
+          <div class="label-side">
+            <div>${isConcept ? 'STATEMENT · 創作敘述' : 'WORLD · 世界觀'}</div>
+            <div class="num">01</div>
+          </div>
+          <div class="content">
+            <h3>${isConcept ? '我們在問的是——' : '故事從這裡開始'}</h3>
+            <p>${isConcept ? e.description : e.world}</p>
+            <p style="font-family:var(--f-hand);color:var(--gdc-blue);font-size:24px;line-height:1.4;">${e.concept || ''}</p>
+          </div>
+        </div>
+      </section>`;
+
+    // Visual / hero block
+    html += `
+      <section class="act">
+        <div class="beat">
+          <div class="label-side">
+            <div>VISUAL · 視覺</div>
+            <div class="num">02</div>
+          </div>
+          <div class="content">
+            <div class="visual-block">
+              <div class="label-pill">KEY VISUAL · ${e.titleEn}</div>
+              <div class="center">
+                <div class="big">${e.no}</div>
+                <div>主視覺 / KEY ART PLACEHOLDER</div>
+              </div>
+            </div>
+            <div class="palette-row">
+              <span class="lbl">PALETTE</span>
+              ${e.palette.map(c => `<div class="sw" style="background:${c}"></div>`).join('')}
+              ${e.palette.map(c => `<span class="mono" style="font-size:10px;color:var(--paper-faint);">${c}</span>`).join('  ')}
+            </div>
+          </div>
+        </div>
+      </section>`;
+
+    // Gameplay or art process
+    if (!isConcept) {
+      html += `
+        <section class="act">
+          <div class="beat">
+            <div class="label-side">
+              <div>GAMEPLAY · 玩法</div>
+              <div class="num">03</div>
+            </div>
+            <div class="content">
+              <h3>怎麼玩</h3>
+              <ul class="gameplay-list">
+                ${e.gameplay.map((g, idx) => `<li><span class="idx">M.${String(idx+1).padStart(2,'0')}</span><span>${g}</span></li>`).join('')}
+              </ul>
+              <div class="visual-block" style="aspect-ratio:21/9;margin-top:8px;">
+                <div class="label-pill">GAMEPLAY DEMO · 30s LOOP</div>
+                <div class="center">
+                  <div class="big">▶</div>
+                  <div>遊戲影片 placeholder</div>
+                </div>
+              </div>
+              <div style="font-family:var(--f-mono);font-size:11px;color:var(--paper-faint);letter-spacing:0.18em;margin-top:12px;">
+                AUDIO · ${e.audio}
+              </div>
+            </div>
+          </div>
+        </section>`;
+    } else {
+      // Concept: show grid of sketches
+      html += `
+        <section class="act concept-act">
+          <div class="beat">
+            <div class="label-side">
+              <div>SKETCHES · 草圖與成稿</div>
+              <div class="num">03</div>
+            </div>
+            <div class="content">
+              <h3>從草圖到成稿</h3>
+              <p>本組共產出 ${e.sketches} 張草圖、最終定稿 ${e.finals} 件作品。</p>
+              <div class="concept-grid">
+                ${Array.from({length: 6}).map((_, k) => `<div class="pc">PLATE ${String(k+1).padStart(2,'0')}</div>`).join('')}
+              </div>
+            </div>
+          </div>
+        </section>`;
+    }
+
+    // Team
+    if (!isConcept) {
+      html += `
+        <section class="act">
+          <div class="beat">
+            <div class="label-side">
+              <div>TEAM · 團隊</div>
+              <div class="num">04</div>
+            </div>
+            <div class="content">
+              <h3>製作團隊</h3>
+              <div class="team-strip">
+                ${e.team.map(t => {
+                  const [name, role] = t.split(' / ');
+                  return `<div class="person"><div class="role">${role || ''}</div><div class="name">${name}</div></div>`;
+                }).join('')}
+              </div>
+              ${e.review ? `
+                <div class="review-card">
+                  <div class="quote">${e.review.split('—')[0].trim()}</div>
+                  <div class="from">— ${e.review.split('—')[1] ? e.review.split('—')[1].trim() : ''}</div>
+                </div>
+              ` : ''}
+              <div class="cta-row">
+                <a class="btn btn-primary" href="#">↓ ${e.download}</a>
+                <a class="btn" href="archive.html#${e.id}">查看詳細頁</a>
+              </div>
+            </div>
+          </div>
+        </section>`;
+    } else {
+      html += `
+        <section class="act">
+          <div class="beat">
+            <div class="label-side">
+              <div>DESIGNERS · 設計者</div>
+              <div class="num">04</div>
+            </div>
+            <div class="content">
+              <h3>設計者</h3>
+              <div class="team-strip">
+                ${e.designers.map(d => `<div class="person"><div class="role">CONCEPT DESIGNER</div><div class="name">${d}</div></div>`).join('')}
+              </div>
+              <div class="cta-row">
+                <a class="btn btn-primary" href="archive.html#${e.id}">→ 進入詳細頁</a>
+              </div>
+            </div>
+          </div>
+        </section>`;
+    }
+
+    // Intermission every 5 acts
+    if ((i + 1) % intermissionEvery === 0 && i + 1 < window.EXHIBITS.length) {
+      const intermissionNum = Math.floor((i + 1) / intermissionEvery);
+      const messages = [
+        { l: '中場休息', en: 'INTERMISSION', h: 'take a breath.' },
+        { l: '下半場開始', en: 'ACT II BEGINS', h: 'turning the page...' }
+      ];
+      const m = messages[intermissionNum - 1] || messages[0];
+      html += `
+        <section class="intermission">
+          <div>
+            <div class="l">${m.en} · ${m.l}</div>
+            <h3>—— 換幕 ——</h3>
+            <div class="h">${m.h}</div>
+          </div>
+        </section>`;
+    }
+
+    acts.insertAdjacentHTML('beforeend', html);
+  });
+
+  // Spotlight
+  const spot = document.getElementById('spot');
+  document.addEventListener('mousemove', e => {
+    spot.style.left = e.clientX + 'px';
+    spot.style.top = e.clientY + 'px';
+  });
+
+  // Progress + counter
+  const prog = document.getElementById('prog');
+  const counter = document.getElementById('counter');
+  const total = window.EXHIBITS.length;
+  const anchors = () => Array.from(document.querySelectorAll('.act-anchor'));
+
+  function updateProgress() {
+    const sh = document.documentElement.scrollHeight - window.innerHeight;
+    const ratio = Math.min(1, Math.max(0, window.scrollY / sh));
+    prog.style.transform = `scaleX(${ratio})`;
+
+    // Find current act
+    const y = window.scrollY + window.innerHeight * 0.4;
+    let cur = '00';
+    for (const a of anchors()) {
+      if (a.offsetTop <= y) cur = a.dataset.act;
+    }
+    counter.textContent = `ACT ${cur} / ${String(total).padStart(2,'0')}`;
+  }
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
+
+  // Side nav
+  function nearestAnchorIndex() {
+    const list = anchors();
+    const y = window.scrollY + 60;
+    let idx = 0;
+    list.forEach((a, i) => { if (a.offsetTop <= y + 10) idx = i; });
+    return { list, idx };
+  }
+  document.getElementById('btn-prev').onclick = () => {
+    const { list, idx } = nearestAnchorIndex();
+    const target = list[Math.max(0, idx - 1)];
+    window.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
+  };
+  document.getElementById('btn-next').onclick = () => {
+    const { list, idx } = nearestAnchorIndex();
+    const target = list[Math.min(list.length - 1, idx + 1)];
+    window.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
+  };
+</script>
+
+</body>
+</html>

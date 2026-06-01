@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gallery · NYCU GDC Showcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=JetBrains+Mono:wght@300;400;500&family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@300;400;600;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/tokens.css">
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  body { background: #050507; font-family: var(--f-sans); }
+
+  /* HUD top */
+  .hud-top {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: 48px;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center;
+    padding: 0 24px;
+    z-index: 100; gap: 24px;
+    font-family: var(--f-mono);
+    font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+  }
+  .hud-top a { color: var(--paper-dim); }
+  .hud-top a:hover { color: var(--gdc-orange); }
+  .hud-top .room { color: var(--gdc-orange); flex: 1; text-align: center; font-size: 12px; }
+
+  /* HUD bottom */
+  .hud-bot {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: 90px;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    z-index: 100;
+    padding: 12px 24px;
+    display: grid;
+    grid-template-columns: 220px 1fr 220px;
+    gap: 24px; align-items: center;
+  }
+  .controls-hint {
+    font-family: var(--f-mono); font-size: 10px;
+    letter-spacing: 0.18em; color: var(--paper-faint);
+    line-height: 1.7;
+  }
+  .controls-hint kbd {
+    display: inline-block;
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 2px 5px; margin: 0 1px;
+    border-radius: 3px; font-size: 9px;
+    color: var(--paper); background: rgba(255,255,255,0.05);
+  }
+  .minimap {
+    height: 64px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(0,0,0,0.4);
+    position: relative; overflow: hidden;
+    cursor: pointer;
+  }
+  .minimap .seg {
+    position: absolute; top: 0; bottom: 0;
+    border-right: 1px dashed rgba(255,255,255,0.15);
+  }
+  .minimap .room-l {
+    position: absolute; top: 6px;
+    font-family: var(--f-mono); font-size: 9px;
+    letter-spacing: 0.18em; color: var(--paper-faint);
+    padding: 0 8px;
+  }
+  .minimap .you {
+    position: absolute; top: 50%;
+    width: 8px; height: 8px;
+    background: var(--gdc-orange);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 16px var(--gdc-orange);
+    transition: left 0.2s;
+  }
+  .minimap .pin {
+    position: absolute; top: 50%;
+    width: 4px; height: 12px;
+    background: rgba(255,255,255,0.4);
+    transform: translate(-50%, -50%);
+  }
+  .pos-readout {
+    font-family: var(--f-mono); font-size: 10px;
+    letter-spacing: 0.18em; color: var(--paper-faint);
+    text-align: right;
+  }
+  .pos-readout .v { color: var(--paper); font-size: 12px; margin-top: 4px; }
+
+  /* === 3D World === */
+  .viewport {
+    position: fixed;
+    inset: 48px 0 90px 0;
+    perspective: 1400px;
+    perspective-origin: 50% 45%;
+    overflow: hidden;
+    cursor: grab;
+    background: radial-gradient(ellipse at center 30%, #1a1822 0%, #050507 75%);
+  }
+  .viewport.dragging { cursor: grabbing; }
+  .viewport, .viewport * {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  .world {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform-style: preserve-3d;
+    transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+    will-change: transform;
+  }
+
+  /* Floor with reflective gradient */
+  .floor {
+    position: absolute;
+    width: 16000px; height: 2400px;
+    left: -8000px;
+    transform: rotateX(90deg) translateZ(-500px);
+    transform-style: preserve-3d;
+    background:
+      linear-gradient(to bottom, rgba(255,255,255,0.04) 0%, transparent 100%),
+      repeating-linear-gradient(90deg, transparent 0, transparent 199px, rgba(255,255,255,0.06) 199px, rgba(255,255,255,0.06) 200px),
+      repeating-linear-gradient(0deg, transparent 0, transparent 199px, rgba(255,255,255,0.06) 199px, rgba(255,255,255,0.06) 200px),
+      linear-gradient(to bottom, #0e0c14 0%, #050507 100%);
+  }
+  /* Ceiling — track lights */
+  .ceiling {
+    position: absolute;
+    width: 16000px; height: 2400px;
+    left: -8000px;
+    transform: rotateX(-90deg) translateZ(-500px);
+    background:
+      repeating-linear-gradient(90deg, transparent 0, transparent 599px, rgba(255,138,61,0.4) 599px, rgba(255,138,61,0.4) 605px, transparent 605px, transparent 1200px),
+      #0a0810;
+  }
+  /* Side walls — left & right at ±1200 */
+  .wall-l, .wall-r {
+    position: absolute;
+    width: 16000px; height: 1000px;
+    left: -8000px; top: -500px;
+    background:
+      repeating-linear-gradient(0deg, transparent 0, transparent 199px, rgba(255,255,255,0.04) 199px, rgba(255,255,255,0.04) 200px),
+      linear-gradient(to right, rgba(255,255,255,0.03), rgba(255,255,255,0));
+  }
+  .wall-l { transform: rotateY(90deg) translateZ(-1200px); }
+  .wall-r { transform: rotateY(-90deg) translateZ(-1200px); }
+  /* Back wall */
+  .back-wall {
+    position: absolute;
+    width: 16000px; height: 1200px;
+    left: -8000px; top: -600px;
+    transform: translateZ(-3000px);
+    background: linear-gradient(to bottom, #0a0810 0%, #02020a 100%);
+  }
+
+  /* Big architectural numbers floating overhead */
+  .room-mark {
+    position: absolute;
+    transform-style: preserve-3d;
+    pointer-events: none;
+    text-align: center;
+    color: rgba(255,255,255,0.04);
+  }
+  .room-mark .name {
+    font-family: var(--f-serif);
+    font-size: 320px;
+    font-weight: 900;
+    line-height: 0.85;
+    letter-spacing: -0.04em;
+    white-space: nowrap;
+  }
+  .room-mark .sub {
+    font-family: var(--f-mono);
+    font-size: 14px;
+    letter-spacing: 0.5em;
+    color: rgba(255,255,255,0.2);
+    margin-top: 8px;
+  }
+  .room-mark.atrium { color: rgba(255,138,61,0.08); }
+  .room-mark.atrium .sub { color: rgba(255,138,61,0.4); }
+
+  /* Architectural archway between rooms */
+  .arch {
+    position: absolute;
+    top: -540px;
+    width: 10px; height: 1100px;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.4), rgba(255,255,255,0.05));
+  }
+  .arch::before {
+    content: ""; position: absolute;
+    top: 0; left: -480px;
+    width: 970px; height: 6px;
+    background: rgba(255,255,255,0.4);
+  }
+  .arch.right { left: 480px; }
+
+  /* Wall text — exhibit room title */
+  .wall-text {
+    position: absolute;
+    transform-style: preserve-3d;
+    pointer-events: none;
+    color: rgba(255,255,255,0.6);
+    font-family: var(--f-serif);
+  }
+
+  /* === Exhibit: large hanging ARTWORK === */
+  .art {
+    position: absolute;
+    transform-style: preserve-3d;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+  }
+  .art.tilt-l { transform: translate(-50%, -50%) rotateY(22deg); }
+  .art.tilt-r { transform: translate(-50%, -50%) rotateY(-22deg); }
+  .art.center { transform: translate(-50%, -50%) rotateY(0deg); }
+
+  .frame {
+    position: relative;
+    width: var(--w, 460px);
+    height: var(--h, 600px);
+    background: var(--bg, #1B3B5F);
+    border: 12px solid #0a0a14;
+    box-shadow:
+      inset 0 0 0 2px rgba(255,255,255,0.1),
+      0 60px 80px -30px rgba(0,0,0,0.9),
+      0 0 120px -20px var(--glow, rgba(255,138,61,0.3));
+    transition: all 0.4s ease;
+    overflow: hidden;
+  }
+  .art:hover .frame {
+    border-color: var(--gdc-orange);
+    box-shadow:
+      inset 0 0 0 2px rgba(255,255,255,0.2),
+      0 80px 100px -30px rgba(0,0,0,0.9),
+      0 0 200px -10px var(--glow, var(--gdc-orange));
+    transform: translateZ(40px);
+  }
+
+  /* Inside frame: visual composition */
+  .frame .layer-1 {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse at 30% 40%, var(--bg-2, rgba(232,192,125,0.3)) 0%, transparent 60%),
+      linear-gradient(135deg, var(--bg, #1B3B5F) 0%, var(--bg-3, #0a1a2a) 100%);
+  }
+  .frame .layer-img {
+    position: absolute; inset: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+  .frame .layer-img::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.75) 100%);
+  }
+  .frame .layer-2 {
+    position: absolute; inset: 0;
+    background-image:
+      repeating-linear-gradient(45deg, transparent 0, transparent 14px, rgba(255,255,255,0.04) 14px, rgba(255,255,255,0.04) 15px);
+    mix-blend-mode: overlay;
+    pointer-events: none;
+  }
+  .frame .layer-3 {
+    position: absolute; inset: 0;
+    display: grid; place-items: center;
+    text-align: center;
+  }
+  .frame .layer-3 .glyph {
+    font-family: var(--f-serif);
+    font-size: var(--glyph-size, 200px);
+    font-weight: 300;
+    color: rgba(255,255,255,0.16);
+    line-height: 0.85;
+    letter-spacing: -0.04em;
+  }
+  .frame .layer-3 .ttl {
+    position: absolute;
+    bottom: 30px; left: 24px; right: 24px;
+    text-align: left;
+  }
+  .frame .layer-3 .ttl .h {
+    font-family: var(--f-serif);
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--paper);
+    line-height: 1.05;
+  }
+  .frame .layer-3 .ttl .e {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    color: rgba(255,255,255,0.6);
+    margin-top: 6px;
+    text-transform: uppercase;
+  }
+  .frame .corner-no {
+    position: absolute;
+    top: 18px; left: 18px;
+    font-family: var(--f-mono);
+    font-size: 11px; letter-spacing: 0.22em;
+    color: rgba(255,255,255,0.7);
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 4px 10px;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(4px);
+  }
+  .frame .corner-pal {
+    position: absolute;
+    top: 18px; right: 18px;
+    display: flex; gap: 4px;
+  }
+  .frame .corner-pal .sw { width: 12px; height: 12px; border: 1px solid rgba(0,0,0,0.4); }
+
+  /* Spotlight cone */
+  .light-cone {
+    position: absolute;
+    bottom: 100%; left: 50%;
+    width: 280px; height: 480px;
+    transform: translateX(-50%);
+    background:
+      linear-gradient(to bottom,
+        rgba(255,255,255,0) 0%,
+        rgba(255,255,255,0.03) 30%,
+        var(--cone, rgba(255,138,61,0.15)) 100%);
+    clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%);
+    pointer-events: none;
+    opacity: 0.7;
+    transition: opacity 0.4s;
+  }
+  .art:hover .light-cone { opacity: 1; }
+
+  /* Floor reflection */
+  .reflection {
+    position: absolute;
+    top: 100%; left: 0; right: 0;
+    height: 60%;
+    background: var(--bg, #1B3B5F);
+    transform: scaleY(-1);
+    opacity: 0.18;
+    filter: blur(8px);
+    mask-image: linear-gradient(to bottom, black, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, black, transparent);
+  }
+
+  /* Plaque */
+  .plaque {
+    position: absolute;
+    top: calc(100% + 30px);
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    color: var(--paper-dim);
+    width: 240px;
+  }
+  .plaque .num {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--gdc-orange);
+    margin-bottom: 4px;
+  }
+  .plaque .ttl { font-family: var(--f-serif); font-size: 18px; color: var(--paper); }
+  .plaque .meta {
+    font-family: var(--f-mono); font-size: 10px;
+    letter-spacing: 0.18em; color: var(--paper-faint);
+    margin-top: 4px;
+  }
+
+  /* Atrium centerpiece — floating sculpture */
+  .totem {
+    position: absolute;
+    transform-style: preserve-3d;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    text-align: center;
+  }
+  .totem-glyph {
+    font-family: var(--f-serif);
+    font-size: 320px; font-weight: 300;
+    line-height: 0.85;
+    color: rgba(255,138,61,0.25);
+    text-shadow: 0 0 60px rgba(255,138,61,0.4);
+    animation: float 6s ease-in-out infinite alternate;
+  }
+  @keyframes float {
+    from { transform: translateY(-10px); }
+    to { transform: translateY(10px); }
+  }
+  .totem-base {
+    margin-top: 24px;
+    font-family: var(--f-mono);
+    font-size: 12px;
+    letter-spacing: 0.5em;
+    color: rgba(255,138,61,0.7);
+  }
+
+  /* Banner overhead */
+  .banner {
+    position: absolute;
+    transform-style: preserve-3d;
+    pointer-events: none;
+    text-align: center;
+    color: rgba(255,255,255,0.7);
+    border-top: 1px solid rgba(255,255,255,0.2);
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    padding: 14px 24px;
+    background: rgba(0,0,0,0.3);
+    backdrop-filter: blur(2px);
+  }
+  .banner .b1 {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.5em;
+    color: var(--gdc-orange);
+  }
+  .banner .b2 {
+    font-family: var(--f-serif);
+    font-size: 24px;
+    margin-top: 6px;
+  }
+
+  /* Atrium info kiosk */
+  .kiosk {
+    position: absolute;
+    transform-style: preserve-3d;
+    transform: translate(-50%, -50%);
+    color: rgba(255,255,255,0.7);
+    text-align: center;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 18px 24px;
+    backdrop-filter: blur(6px);
+  }
+  .kiosk .l { font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.3em; color: var(--gdc-orange); margin-bottom: 8px; }
+  .kiosk .h { font-family: var(--f-serif); font-size: 24px; }
+
+  /* Detail modal */
+  .modal {
+    position: fixed;
+    inset: 0; z-index: 200;
+    display: none;
+    background: rgba(0,0,0,0.9);
+    backdrop-filter: blur(20px);
+  }
+  .modal.open { display: grid; place-items: center; }
+  .modal-card {
+    width: min(900px, 92vw);
+    max-height: 86vh;
+    overflow: auto;
+    background: #0a0a12;
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 0;
+    position: relative;
+  }
+  .modal-hero {
+    aspect-ratio: 16/8;
+    background: var(--mh-bg, #1B3B5F);
+    position: relative;
+    overflow: hidden;
+    display: grid; place-items: center;
+  }
+  .modal-hero::before {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse at 30% 40%, var(--mh-glow, rgba(232,192,125,0.4)) 0%, transparent 60%),
+      repeating-linear-gradient(45deg, transparent 0, transparent 14px, rgba(255,255,255,0.05) 14px, rgba(255,255,255,0.05) 15px);
+  }
+  .modal-hero .glyph {
+    position: relative;
+    font-family: var(--f-serif);
+    font-size: clamp(120px, 18vw, 220px);
+    color: rgba(255,255,255,0.2);
+    line-height: 1;
+  }
+  .modal-body { padding: 40px; color: var(--paper); }
+  .modal .close {
+    position: absolute; top: 12px; right: 12px;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: var(--paper);
+    width: 36px; height: 36px;
+    cursor: pointer; font-size: 18px;
+    z-index: 5;
+  }
+  .modal .close:hover { background: var(--gdc-orange); border-color: var(--gdc-orange); color: #000; }
+  .modal-body h3 {
+    font-family: var(--f-serif);
+    font-size: 36px; font-weight: 600;
+    margin: 0 0 4px;
+  }
+  .modal-body .en {
+    font-family: var(--f-mono);
+    font-size: 11px; letter-spacing: 0.22em;
+    color: var(--paper-faint);
+    text-transform: uppercase; margin-bottom: 18px;
+  }
+  .modal-body .tagline {
+    font-family: var(--f-hand);
+    color: var(--gdc-blue);
+    font-size: 24px;
+    transform: rotate(-2deg);
+    display: inline-block;
+    margin-bottom: 16px;
+  }
+  .modal-body p { color: var(--paper-dim); line-height: 1.85; font-size: 15px; }
+  .modal-body .actions {
+    margin-top: 24px;
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+
+  /* Welcome overlay */
+  .welcome {
+    position: fixed; inset: 0; z-index: 150;
+    background: #000; display: grid; place-items: center;
+    text-align: center; transition: opacity 0.6s;
+  }
+  .welcome.hide { opacity: 0; pointer-events: none; }
+  .welcome .meta {
+    font-family: var(--f-mono); font-size: 11px;
+    letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--gdc-orange); margin-bottom: 24px;
+  }
+  .welcome h1 {
+    font-family: var(--f-serif);
+    font-size: clamp(48px, 9vw, 140px);
+    font-weight: 600; margin: 0; line-height: 1;
+  }
+  .welcome h1 em { color: var(--gdc-orange); font-style: italic; }
+  .welcome p {
+    color: var(--paper-dim); margin-top: 24px;
+    max-width: 480px; line-height: 1.7;
+    margin-left: auto; margin-right: auto;
+    text-align: center;
+  }
+  .welcome button {
+    margin-top: 36px;
+    background: var(--gdc-orange);
+    border: none; color: #000;
+    padding: 16px 32px;
+    font-family: var(--f-mono);
+    font-size: 12px; letter-spacing: 0.22em;
+    text-transform: uppercase; cursor: pointer;
+  }
+  .welcome button:hover { background: var(--paper); }
+
+  @media (max-width: 720px) {
+    .hud-bot { grid-template-columns: 1fr; height: auto; padding: 8px 12px; }
+    .controls-hint, .pos-readout { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Welcome -->
+<div class="welcome" id="welcome">
+  <div>
+    <div class="meta">VIRTUAL GALLERY · 虛擬展場</div>
+    <h1>推開門，<em>進場吧</em>。</h1>
+    <p>三進式線上展場：遊戲館、中庭、概念館。<br>← → 鍵或拖曳移動視角，點擊任一作品看詳細。</p>
+    <button onclick="document.getElementById('welcome').classList.add('hide')">→ 進入展場</button>
+  </div>
+</div>
+
+<!-- HUD top -->
+<div class="hud-top">
+  <a href="index.html">← 退場</a>
+  <span class="room" id="room-name">ROOM I · 遊戲館</span>
+  <a href="perform.html">看表演 →</a>
+</div>
+
+<!-- World -->
+<div class="viewport" id="viewport">
+  <div class="world" id="world">
+    <div class="back-wall"></div>
+    <div class="floor"></div>
+    <div class="ceiling"></div>
+    <div class="wall-l"></div>
+    <div class="wall-r"></div>
+
+    <!-- Architectural marks -->
+    <div class="room-mark" style="left: 1200px; top: -460px;">
+      <div class="name">GAMES</div>
+      <div class="sub">ROOM I · 遊戲館</div>
+    </div>
+
+    <!-- Atrium centerpiece -->
+    <div class="totem" style="left: 3050px;">
+      <div class="totem-glyph">⊹</div>
+      <div class="totem-base">— ATRIUM · 中庭 —</div>
+    </div>
+
+    <div class="kiosk" style="left: 3050px; top: 280px;">
+      <div class="l">INFO · 換場</div>
+      <div class="h">繼續往前 →<br>進入概念館</div>
+    </div>
+
+    <div class="room-mark atrium" style="left: 4850px; top: -460px;">
+      <div class="name">CONCEPTS</div>
+      <div class="sub">ROOM II · 概念設計館</div>
+    </div>
+
+    <!-- Arches -->
+    <div class="arch" style="left: 2450px;"></div>
+    <div class="arch" style="left: 3650px;"></div>
+
+    <!-- Banner over rooms -->
+    <div class="banner" style="left: 1200px; top: -180px; transform: translateX(-50%) rotateX(-12deg);">
+      <div class="b1">— ROOM I —</div>
+      <div class="b2">遊戲館 / GAMES</div>
+    </div>
+    <div class="banner" style="left: 4850px; top: -180px; transform: translateX(-50%) rotateX(-12deg);">
+      <div class="b1">— ROOM II —</div>
+      <div class="b2">概念館 / CONCEPTS</div>
+    </div>
+
+    <!-- Plinths injected -->
+    <div id="plinths"></div>
+  </div>
+</div>
+
+<!-- HUD bottom -->
+<div class="hud-bot">
+  <div class="controls-hint">
+    <kbd>←</kbd><kbd>→</kbd> 移動 · <kbd>拖曳</kbd> 視角<br>
+    <kbd>Click</kbd> 看詳細 · <kbd>Home</kbd> 起點
+  </div>
+  <div class="minimap" id="minimap">
+    <div class="seg" style="left: 42%;"></div>
+    <div class="seg" style="left: 60%;"></div>
+    <div class="room-l" style="left: 4%;">ROOM I · 遊戲館</div>
+    <div class="room-l" style="left: 44%;">ATRIUM</div>
+    <div class="room-l" style="left: 62%;">ROOM II · 概念館</div>
+    <div class="you" id="you" style="left: 8%;"></div>
+  </div>
+  <div class="pos-readout">
+    <div>POSITION</div>
+    <div class="v" id="pos">X 0000 · Z 0000</div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="modal">
+  <div class="modal-card" id="modal-card"></div>
+</div>
+
+<script src="data/exhibits.js"></script>
+<script>
+  const games = window.EXHIBITS.filter(e => e.type === 'game');
+  const concepts = window.EXHIBITS.filter(e => e.type === 'concept');
+
+  const plinthsEl = document.getElementById('plinths');
+  const minimap = document.getElementById('minimap');
+  const WORLD_MIN = -400;
+  const WORLD_MAX = 6400;
+  const WORLD_SPAN = WORLD_MAX - WORLD_MIN;
+
+  // Glyph shown big in each frame (visual signature)
+  const glyphMap = {
+    tidewalker: '潮', neonpurr: 'KILO', papershrine: '紙',
+    loophorse: '迴', garden404: '404', underink: '墨',
+    halfsignal: '⌒', 'concept-driftfauna': '◐',
+    'concept-ruinui': '⌧', 'concept-folkmecha': '甲'
+  };
+
+  function makeArt(e, x, z, opts = {}) {
+    const isConcept = e.type === 'concept';
+    const tilt = opts.tilt || 'center';
+    const div = document.createElement('div');
+    div.className = `art ${tilt === 'left' ? 'tilt-l' : tilt === 'right' ? 'tilt-r' : 'center'}`;
+    div.style.left = x + 'px';
+    div.style.top = (z || 0) + 'px';
+    div.dataset.id = e.id;
+
+    const w = opts.w || (isConcept ? 540 : 460);
+    const h = opts.h || (isConcept ? 700 : 600);
+    const glyph = glyphMap[e.id] || e.no;
+    const gSize = glyph.length === 1 ? '240px' : (glyph.length <= 3 ? '160px' : '110px');
+
+    div.innerHTML = `
+      <div class="light-cone" style="--cone: ${e.palette[0]}66"></div>
+      <div class="frame" style="
+        --w:${w}px; --h:${h}px;
+        --bg:${e.palette[0]};
+        --bg-2:${e.palette[1]}66;
+        --bg-3:${e.palette[2] || e.palette[0]};
+        --glow:${e.palette[1]}99;
+        --glyph-size:${gSize};
+      ">
+        <div class="layer-1"></div>
+        ${e.image ? `<div class="layer-img" style="background-image:url('${e.image}')"></div>` : ''}
+        <div class="layer-2"></div>
+        <div class="layer-3">
+          ${e.image ? '' : `<div class="glyph">${glyph}</div>`}
+          <div class="ttl">
+            <div class="h">${e.title}</div>
+            <div class="e">${e.titleEn} · ${isConcept ? e.medium : e.genre}</div>
+          </div>
+        </div>
+        <div class="corner-no">${e.no}</div>
+        <div class="corner-pal">
+          ${e.palette.map(c => `<div class="sw" style="background:${c}"></div>`).join('')}
+        </div>
+        <div class="reflection"></div>
+      </div>
+      <div class="plaque">
+        <div class="num">${e.no} · ${isConcept ? 'CONCEPT' : 'GAME'}</div>
+        <div class="ttl">${e.title}</div>
+        <div class="meta">${e.titleEn} · ${isConcept ? e.medium : e.genre}</div>
+      </div>
+    `;
+    div.addEventListener('click', (ev) => { ev.stopPropagation(); openDetail(e); });
+    plinthsEl.appendChild(div);
+
+    const pin = document.createElement('div');
+    pin.className = 'pin';
+    pin.style.left = (((x - WORLD_MIN) / WORLD_SPAN) * 100) + '%';
+    minimap.appendChild(pin);
+  }
+
+  // === ROOM I: games ===
+  const gameLayout = [
+    { x: 700,  z: -140, tilt: 'right', w: 520, h: 640 },
+    { x: 1750, z:  140, tilt: 'left',  w: 520, h: 640 },
+  ];
+  games.forEach((e, i) => {
+    const layout = gameLayout[i] || { x: 700 + i * 1000, z: 0, tilt: 'center' };
+    makeArt(e, layout.x, layout.z, layout);
+  });
+
+  // === ROOM II: concepts (bigger, centered) ===
+  const conceptLayout = [
+    { x: 4300, z:  -90, tilt: 'right', w: 600, h: 720 },
+    { x: 5400, z:  120, tilt: 'left',  w: 600, h: 720 },
+  ];
+  concepts.forEach((e, i) => {
+    const layout = conceptLayout[i] || { x: 4300 + i * 1100, z: 0, tilt: 'center' };
+    makeArt(e, layout.x, layout.z, layout);
+  });
+
+  // Camera
+  const world = document.getElementById('world');
+  const viewport = document.getElementById('viewport');
+  const youDot = document.getElementById('you');
+  const posReadout = document.getElementById('pos');
+  const roomName = document.getElementById('room-name');
+
+  let camX = 0, camY = 0;
+  const STEP = 360;
+
+  function update() {
+    world.style.transform = `translate(-50%, -50%) translateX(${-camX}px) translateY(${-camY}px)`;
+    const ratio = Math.max(0, Math.min(1, (camX - WORLD_MIN) / WORLD_SPAN));
+    youDot.style.left = (ratio * 100) + '%';
+    posReadout.textContent = `X ${String(Math.round(camX)).padStart(4,'0')} · Z ${String(Math.round(camY)).padStart(4,'0')}`;
+    if (camX < 2450) roomName.textContent = 'ROOM I · 遊戲館';
+    else if (camX < 3650) roomName.textContent = 'ATRIUM · 中庭';
+    else roomName.textContent = 'ROOM II · 概念設計館';
+  }
+  function setCam(x, y) {
+    camX = Math.max(WORLD_MIN, Math.min(WORLD_MAX, x));
+    camY = Math.max(-200, Math.min(200, y || 0));
+    update();
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.key === 'ArrowRight' || e.key === 'd') setCam(camX + STEP, camY);
+    else if (e.key === 'ArrowLeft' || e.key === 'a') setCam(camX - STEP, camY);
+    else if (e.key === 'ArrowUp' || e.key === 'w') setCam(camX, camY - 60);
+    else if (e.key === 'ArrowDown' || e.key === 's') setCam(camX, camY + 60);
+    else if (e.key === 'Home') setCam(0, 0);
+    else if (e.key === 'Escape') closeDetail();
+  });
+
+  let dragging = false, dragStart = null, camStart = null, dragMoved = false, activePointerId = null;
+  function endDrag() {
+    dragging = false; dragStart = null; camStart = null; activePointerId = null;
+    viewport.classList.remove('dragging');
+  }
+  viewport.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'touch') return;
+    dragging = true; dragMoved = false;
+    dragStart = { x: e.clientX, y: e.clientY };
+    camStart = { x: camX, y: camY };
+    activePointerId = e.pointerId;
+    viewport.classList.add('dragging');
+  });
+  viewport.addEventListener('pointermove', (e) => {
+    if (!dragging || e.pointerId !== activePointerId) return;
+    const dx = e.clientX - dragStart.x, dy = e.clientY - dragStart.y;
+    if (Math.abs(dx) + Math.abs(dy) > 8) {
+      if (!dragMoved) {
+        dragMoved = true;
+        try { viewport.setPointerCapture(e.pointerId); } catch (_) {}
+      }
+      setCam(camStart.x - dx * 2.6, camStart.y - dy * 0.8);
+    }
+  });
+  viewport.addEventListener('pointerup', endDrag);
+  viewport.addEventListener('pointercancel', endDrag);
+  viewport.addEventListener('lostpointercapture', endDrag);
+  window.addEventListener('blur', endDrag);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) endDrag(); });
+  // Suppress click-through ONLY if the pointer actually dragged
+  viewport.addEventListener('click', (e) => {
+    if (dragMoved) {
+      e.stopPropagation(); e.preventDefault();
+      dragMoved = false;
+    }
+  }, true);
+
+  let touchStart = null, touchCamStart = null;
+  viewport.addEventListener('touchstart', (e) => {
+    if (!e.touches[0]) return;
+    touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    touchCamStart = { x: camX, y: camY };
+  });
+  viewport.addEventListener('touchmove', (e) => {
+    if (!touchStart || !e.touches[0]) return;
+    const dx = e.touches[0].clientX - touchStart.x, dy = e.touches[0].clientY - touchStart.y;
+    setCam(touchCamStart.x - dx * 2.6, touchCamStart.y - dy * 0.8);
+  });
+
+  // Wheel: scroll horizontally
+  viewport.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+    setCam(camX + delta * 1.4, camY);
+  }, { passive: false });
+
+  minimap.addEventListener('click', (e) => {
+    const r = minimap.getBoundingClientRect();
+    const ratio = (e.clientX - r.left) / r.width;
+    setCam(WORLD_MIN + ratio * WORLD_SPAN, camY);
+  });
+
+  // Modal
+  const modal = document.getElementById('modal');
+  const modalCard = document.getElementById('modal-card');
+  function openDetail(e) {
+    const isConcept = e.type === 'concept';
+    const glyph = glyphMap[e.id] || e.no;
+    modalCard.innerHTML = `
+      <button class="close" onclick="closeDetail()">×</button>
+      <div class="modal-hero" style="--mh-bg:${e.palette[0]};--mh-glow:${e.palette[1]}66${e.image ? `;background-image:linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.6)), url('${e.image}');background-size:cover;background-position:center` : ''}">
+        ${e.image ? '' : `<div class="glyph">${glyph}</div>`}
+      </div>
+      <div class="modal-body">
+        <div class="mono" style="font-size:11px;letter-spacing:0.22em;color:var(--gdc-orange);text-transform:uppercase;margin-bottom:8px;">${e.no} · ${isConcept ? 'CONCEPT' : 'GAME'}</div>
+        <h3>${e.title}</h3>
+        <div class="en">${e.titleEn} · ${isConcept ? e.medium : e.genre}</div>
+        <div class="tagline">「${e.tagline}」</div>
+        <p>${isConcept ? e.description : e.world}</p>
+        ${e.concept ? `<p style="color:var(--paper-faint);">${e.concept}</p>` : ''}
+        ${e.gallery && e.gallery.length > 1 ? `
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:24px;">
+            ${e.gallery.slice(1).map(src => `<div style="aspect-ratio:4/3;background:url('${src}') center/cover;border:1px solid rgba(255,255,255,0.08);"></div>`).join('')}
+          </div>` : ''}
+        <div class="actions">
+          <a class="btn btn-primary" href="archive.html#${e.id}">→ 完整詳細頁</a>
+          <button class="btn" onclick="closeDetail()">繼續逛</button>
+        </div>
+      </div>
+    `;
+    modal.classList.add('open');
+  }
+  function closeDetail() { modal.classList.remove('open'); }
+  window.closeDetail = closeDetail;
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeDetail(); });
+
+  update();
+</script>
+
+</body>
+</html>

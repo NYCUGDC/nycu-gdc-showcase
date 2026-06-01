@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gallery · NYCU GDC Showcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=JetBrains+Mono:wght@300;400;500&family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@300;400;600;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/tokens.css">
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: var(--bg-deeper);
+    font-family: var(--f-sans);
+  }
+
+  /* Top HUD */
+  .hud-top {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 56px;
+    background: rgba(10,10,16,0.7);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--paper-line);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    z-index: 100;
+    gap: 24px;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+  .hud-top a { color: var(--paper-dim); }
+  .hud-top a:hover { color: var(--gdc-orange); }
+  .hud-top .room {
+    color: var(--gdc-orange);
+    flex: 1;
+    text-align: center;
+  }
+
+  /* Bottom HUD with mini-map */
+  .hud-bot {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 110px;
+    background: rgba(10,10,16,0.85);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--paper-line);
+    z-index: 100;
+    padding: 16px 24px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 24px;
+    align-items: center;
+  }
+  .controls-hint {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    color: var(--paper-faint);
+    line-height: 1.6;
+  }
+  .controls-hint kbd {
+    display: inline-block;
+    border: 1px solid var(--paper-line);
+    padding: 2px 6px;
+    margin: 0 2px;
+    border-radius: 3px;
+    font-size: 10px;
+    color: var(--paper);
+    background: var(--bg-rise);
+  }
+
+  /* Mini-map */
+  .minimap {
+    height: 78px;
+    border: 1px solid var(--paper-line);
+    background: var(--bg-stage);
+    position: relative;
+    overflow: hidden;
+  }
+  .minimap .seg {
+    position: absolute;
+    top: 0; bottom: 0;
+    border-right: 1px dashed var(--paper-line);
+  }
+  .minimap .room-l {
+    position: absolute;
+    top: 8px;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    color: var(--paper-faint);
+    padding: 2px 8px;
+  }
+  .minimap .you {
+    position: absolute;
+    top: 50%;
+    width: 10px; height: 10px;
+    background: var(--gdc-orange);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 12px var(--gdc-orange);
+    transition: left 0.15s;
+  }
+  .minimap .pin {
+    position: absolute;
+    top: 50%;
+    width: 4px; height: 4px;
+    background: var(--paper-faint);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .pos-readout {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    color: var(--paper-faint);
+    text-align: right;
+  }
+  .pos-readout .v { color: var(--paper); font-size: 13px; margin-top: 4px; }
+
+  /* World */
+  .viewport {
+    position: fixed;
+    inset: 56px 0 110px 0;
+    perspective: 1200px;
+    perspective-origin: 50% 50%;
+    overflow: hidden;
+    cursor: grab;
+    background:
+      radial-gradient(ellipse at center, oklch(0.20 0.012 260) 0%, var(--bg-deeper) 80%);
+  }
+  .viewport.dragging { cursor: grabbing; }
+
+  .world {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform-style: preserve-3d;
+    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    will-change: transform;
+  }
+
+  /* Floor / ceiling */
+  .floor, .ceiling {
+    position: absolute;
+    width: 12000px;
+    height: 1400px;
+    left: -6000px;
+    transform-style: preserve-3d;
+    background:
+      repeating-linear-gradient(90deg,
+        transparent 0,
+        transparent 199px,
+        rgba(255,255,255,0.04) 199px,
+        rgba(255,255,255,0.04) 200px),
+      repeating-linear-gradient(0deg,
+        transparent 0,
+        transparent 199px,
+        rgba(255,255,255,0.04) 199px,
+        rgba(255,255,255,0.04) 200px),
+      linear-gradient(to bottom, var(--bg-deeper) 0%, var(--bg-stage) 100%);
+  }
+  .floor { transform: rotateX(90deg) translateZ(-400px); top: 0; }
+  .ceiling { transform: rotateX(-90deg) translateZ(-400px); top: 0;
+    background:
+      repeating-linear-gradient(90deg, transparent 0, transparent 999px, rgba(255,255,255,0.06) 999px, rgba(255,255,255,0.06) 1000px),
+      var(--bg-deeper);
+  }
+
+  /* Back wall — used as horizon */
+  .back-wall {
+    position: absolute;
+    width: 12000px;
+    height: 800px;
+    left: -6000px;
+    top: -400px;
+    transform: translateZ(-2000px);
+    background:
+      linear-gradient(to bottom, var(--bg-deeper) 0%, oklch(0.13 0.012 260) 100%);
+  }
+
+  /* Room labels (overhead, big serif numbers) */
+  .room-label {
+    position: absolute;
+    top: -360px;
+    transform-style: preserve-3d;
+    text-align: center;
+    color: var(--paper-line);
+    pointer-events: none;
+  }
+  .room-label .name {
+    font-family: var(--f-serif);
+    font-size: 220px;
+    font-weight: 300;
+    line-height: 0.9;
+    color: rgba(255,255,255,0.04);
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+  }
+  .room-label .sub {
+    font-family: var(--f-mono);
+    font-size: 14px;
+    letter-spacing: 0.4em;
+    color: var(--paper-faint);
+    margin-top: 8px;
+  }
+
+  /* Room divider arch */
+  .arch {
+    position: absolute;
+    top: -340px;
+    width: 4px;
+    height: 720px;
+    background: var(--paper-line);
+  }
+  .arch::before {
+    content: "";
+    position: absolute;
+    top: -2px; left: -40px;
+    width: 84px; height: 4px;
+    background: var(--paper-line);
+  }
+
+  /* Plinth (display block) */
+  .plinth {
+    position: absolute;
+    transform-style: preserve-3d;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+  }
+  .plinth.left { transform: translate(-50%, -50%) rotateY(20deg); }
+  .plinth.right { transform: translate(-50%, -50%) rotateY(-20deg); }
+
+  /* Painting / display panel */
+  .panel {
+    position: relative;
+    width: 360px;
+    height: 460px;
+    background: var(--bg-rise);
+    border: 14px solid var(--bg-card);
+    box-shadow:
+      inset 0 0 0 1px var(--paper-line),
+      0 40px 60px -20px rgba(0,0,0,0.8);
+    transition: all 0.4s ease;
+    overflow: hidden;
+  }
+  .plinth:hover .panel {
+    border-color: var(--gdc-orange);
+    transform: scale(1.02) translateZ(20px);
+  }
+  .panel .panel-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(45deg, transparent 0, transparent 14px, rgba(255,255,255,0.025) 14px, rgba(255,255,255,0.025) 15px);
+  }
+  .panel .panel-no {
+    position: absolute;
+    top: 18px; left: 18px;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    color: var(--paper-faint);
+  }
+  .panel .panel-mid {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    padding: 0 24px;
+  }
+  .panel .panel-mid .big {
+    font-family: var(--f-serif);
+    font-size: 110px;
+    font-weight: 300;
+    color: var(--paper-line);
+    line-height: 0.9;
+  }
+  .panel .panel-mid .ttl {
+    font-family: var(--f-serif);
+    font-size: 28px;
+    font-weight: 600;
+    margin-top: 12px;
+    color: var(--paper);
+  }
+  .panel .panel-mid .en {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    color: var(--paper-faint);
+    margin-top: 6px;
+    text-transform: uppercase;
+  }
+  .panel .swatches {
+    position: absolute;
+    bottom: 18px; left: 18px; right: 18px;
+    display: flex;
+    gap: 6px;
+  }
+  .panel .swatches .sw { flex: 1; height: 14px; border: 1px solid var(--paper-line); }
+
+  /* Spotlight cone above panel */
+  .panel-light {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    width: 200px;
+    height: 320px;
+    transform: translateX(-50%);
+    background:
+      linear-gradient(to bottom,
+        rgba(255,138,61,0) 0%,
+        rgba(255,138,61,0.06) 60%,
+        rgba(255,138,61,0.2) 100%);
+    clip-path: polygon(35% 0, 65% 0, 100% 100%, 0 100%);
+    pointer-events: none;
+    opacity: 0.6;
+    transition: opacity 0.4s;
+  }
+  .plinth:hover .panel-light { opacity: 1; }
+
+  /* Plaque under each panel */
+  .plaque {
+    margin-top: 24px;
+    text-align: center;
+    color: var(--paper-dim);
+  }
+  .plaque .ttl {
+    font-family: var(--f-serif);
+    font-size: 18px;
+    color: var(--paper);
+  }
+  .plaque .ten {
+    font-family: var(--f-hand);
+    color: var(--gdc-blue);
+    font-size: 22px;
+    margin-top: 4px;
+    transform: rotate(-2deg);
+    display: inline-block;
+  }
+
+  /* Big concept hero (taller for concept group) */
+  .panel.concept {
+    width: 480px;
+    height: 580px;
+    border-color: oklch(0.32 0.04 80);
+  }
+
+  /* Center totem in atrium */
+  .totem {
+    position: absolute;
+    transform-style: preserve-3d;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+  }
+  .totem .num {
+    font-family: var(--f-serif);
+    font-size: 360px;
+    line-height: 0.85;
+    font-weight: 900;
+    color: rgba(255,255,255,0.05);
+    letter-spacing: -0.04em;
+  }
+  .totem .lab {
+    font-family: var(--f-mono);
+    font-size: 13px;
+    letter-spacing: 0.5em;
+    color: var(--gdc-orange);
+    margin-top: 12px;
+  }
+
+  /* Detail modal */
+  .detail-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: none;
+    background: rgba(8,8,12,0.92);
+    backdrop-filter: blur(14px);
+  }
+  .detail-modal.open { display: grid; place-items: center; }
+  .detail-card {
+    width: min(820px, 92vw);
+    max-height: 84vh;
+    overflow: auto;
+    background: var(--bg-rise);
+    border: 1px solid var(--paper-line);
+    padding: 40px;
+    position: relative;
+  }
+  .detail-card .close {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: transparent;
+    border: 1px solid var(--paper-line);
+    color: var(--paper);
+    width: 36px; height: 36px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  .detail-card .close:hover { background: var(--gdc-orange); border-color: var(--gdc-orange); color: var(--bg-deeper); }
+  .detail-card h3 {
+    font-family: var(--f-serif);
+    font-size: 40px;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+  .detail-card .en {
+    font-family: var(--f-mono);
+    font-size: 12px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--paper-faint);
+    margin-bottom: 24px;
+  }
+  .detail-card p { color: var(--paper-dim); line-height: 1.8; font-size: 15px; }
+  .detail-card .actions {
+    margin-top: 28px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  /* Touch / small-screen fallback */
+  @media (max-width: 720px) {
+    .hud-bot { grid-template-columns: 1fr; height: auto; padding: 12px; }
+    .controls-hint { display: none; }
+    .pos-readout { display: none; }
+    .panel { width: 240px; height: 320px; border-width: 10px; }
+    .panel .panel-mid .big { font-size: 72px; }
+    .panel.concept { width: 280px; height: 400px; }
+  }
+
+  /* Welcome overlay */
+  .welcome {
+    position: fixed;
+    inset: 0;
+    z-index: 150;
+    background: var(--bg-deeper);
+    display: grid;
+    place-items: center;
+    text-align: center;
+    transition: opacity 0.6s;
+  }
+  .welcome.hide { opacity: 0; pointer-events: none; }
+  .welcome .meta {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gdc-orange);
+    margin-bottom: 24px;
+  }
+  .welcome h1 {
+    font-family: var(--f-serif);
+    font-size: clamp(48px, 8vw, 120px);
+    font-weight: 600;
+    margin: 0;
+    line-height: 1;
+  }
+  .welcome h1 em { color: var(--gdc-orange); font-style: italic; }
+  .welcome p { color: var(--paper-dim); margin-top: 24px; max-width: 480px; line-height: 1.7; }
+  .welcome button {
+    margin-top: 36px;
+    background: var(--gdc-orange);
+    border: none;
+    color: var(--bg-deeper);
+    padding: 16px 32px;
+    font-family: var(--f-mono);
+    font-size: 12px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .welcome button:hover { background: var(--paper); }
+</style>
+</head>
+<body>
+
+<!-- Welcome -->
+<div class="welcome" id="welcome">
+  <div>
+    <div class="meta">VIRTUAL GALLERY · 虛擬展場</div>
+    <h1>推開門，<em>進場吧</em>。</h1>
+    <p>三進式的線上展場：遊戲館、中庭、概念設計館。<br>使用 ← → 方向鍵或拖曳畫面移動，點擊任一展品看詳細。</p>
+    <button onclick="document.getElementById('welcome').classList.add('hide')">→ 進入展場</button>
+  </div>
+</div>
+
+<!-- HUD top -->
+<div class="hud-top">
+  <a href="index.html">← 返回入口</a>
+  <span class="room" id="room-name">ROOM I · 遊戲館</span>
+  <a href="perform.html">看表演 →</a>
+</div>
+
+<!-- World -->
+<div class="viewport" id="viewport">
+  <div class="world" id="world">
+    <div class="back-wall"></div>
+    <div class="floor"></div>
+    <div class="ceiling"></div>
+
+    <!-- Room I label -->
+    <div class="room-label" style="left: 700px;">
+      <div class="name">GAMES</div>
+      <div class="sub">ROOM I · 遊戲館</div>
+    </div>
+
+    <!-- Plinths injected by JS -->
+    <div id="plinths"></div>
+
+    <!-- Atrium totem between rooms -->
+    <div class="totem" style="left: 4400px;">
+      <div class="num">⊹</div>
+      <div class="lab">ATRIUM · 中庭</div>
+    </div>
+
+    <!-- Concept room label -->
+    <div class="room-label" style="left: 6800px;">
+      <div class="name">CONCEPTS</div>
+      <div class="sub">ROOM II · 概念設計館</div>
+    </div>
+
+    <!-- Arches -->
+    <div class="arch" style="left: 3700px;"></div>
+    <div class="arch" style="left: 5100px;"></div>
+  </div>
+</div>
+
+<!-- HUD bottom -->
+<div class="hud-bot">
+  <div class="controls-hint">
+    <div><kbd>←</kbd> <kbd>→</kbd> 移動 &nbsp;·&nbsp; <kbd>拖曳</kbd> 視角</div>
+    <div><kbd>點擊</kbd> 展品看詳細 &nbsp;·&nbsp; <kbd>Home</kbd> 回到起點</div>
+  </div>
+  <div class="minimap" id="minimap">
+    <div class="seg" style="left: 33%;"></div>
+    <div class="seg" style="left: 66%;"></div>
+    <div class="room-l" style="left: 4%;">ROOM I</div>
+    <div class="room-l" style="left: 38%;">ATRIUM</div>
+    <div class="room-l" style="left: 71%;">ROOM II</div>
+    <div class="you" id="you" style="left: 8%;"></div>
+  </div>
+  <div class="pos-readout">
+    <div>POSITION</div>
+    <div class="v" id="pos">X 0000 · Z 0000</div>
+  </div>
+</div>
+
+<!-- Detail modal -->
+<div class="detail-modal" id="modal">
+  <div class="detail-card" id="modal-card"></div>
+</div>
+
+<script src="data/exhibits.js"></script>
+<script>
+  const games = window.EXHIBITS.filter(e => e.type === 'game');
+  const concepts = window.EXHIBITS.filter(e => e.type === 'concept');
+
+  // Layout: games in Room I (x 0..3500), atrium 3700..5100, concepts 5300..8500
+  const plinthsEl = document.getElementById('plinths');
+  const minimap = document.getElementById('minimap');
+  const WORLD_MIN = -200;
+  const WORLD_MAX = 9000;
+  const WORLD_SPAN = WORLD_MAX - WORLD_MIN;
+
+  function makePlinth(e, x, z, opts = {}) {
+    const isConcept = e.type === 'concept';
+    const tilt = opts.tilt || (Math.random() > 0.5 ? 'left' : 'right');
+    const div = document.createElement('div');
+    div.className = `plinth ${tilt}`;
+    div.style.left = x + 'px';
+    div.style.top = (z || 0) + 'px';
+    div.dataset.id = e.id;
+    div.innerHTML = `
+      <div class="panel-light"></div>
+      <div class="panel ${isConcept ? 'concept' : ''}">
+        <div class="panel-bg"></div>
+        <div class="panel-no">${e.no} · ${isConcept ? 'CONCEPT' : 'GAME'}</div>
+        <div class="panel-mid">
+          <div class="big">${e.no}</div>
+          <div class="ttl">${e.title}</div>
+          <div class="en">${e.titleEn}</div>
+        </div>
+        <div class="swatches">
+          ${e.palette.map(c => `<div class="sw" style="background:${c}"></div>`).join('')}
+        </div>
+      </div>
+      <div class="plaque">
+        <div class="ttl">${e.title}</div>
+        <div class="mono" style="font-size:10px;letter-spacing:0.18em;color:var(--paper-faint);margin-top:4px;">${e.titleEn} · ${isConcept ? e.medium : e.genre}</div>
+      </div>
+    `;
+    div.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      openDetail(e);
+    });
+    plinthsEl.appendChild(div);
+
+    // Mini-map pin
+    const pin = document.createElement('div');
+    pin.className = 'pin';
+    pin.style.left = (((x - WORLD_MIN) / WORLD_SPAN) * 100) + '%';
+    minimap.appendChild(pin);
+  }
+
+  // Place game plinths along Room I — alternating sides
+  games.forEach((e, i) => {
+    const x = 200 + i * 480;
+    const z = (i % 2 === 0) ? -120 : 120; // alternate forward/back for depth
+    makePlinth(e, x, z, { tilt: i % 2 === 0 ? 'right' : 'left' });
+  });
+
+  // Place concept plinths in Room II — bigger, more spaced
+  concepts.forEach((e, i) => {
+    const x = 5500 + i * 900;
+    const z = (i % 2 === 0) ? -100 : 100;
+    makePlinth(e, x, z, { tilt: i % 2 === 0 ? 'left' : 'right' });
+  });
+
+  // Camera
+  const world = document.getElementById('world');
+  const viewport = document.getElementById('viewport');
+  const youDot = document.getElementById('you');
+  const posReadout = document.getElementById('pos');
+  const roomName = document.getElementById('room-name');
+
+  let camX = 0; // world x position
+  let camY = 0;
+  const STEP = 320;
+
+  function update() {
+    // Translate world opposite to camera; bring camera into 'looking forward' position by translateZ
+    world.style.transform = `translate(-50%, -50%) translateX(${-camX}px) translateY(${-camY}px) translateZ(0px)`;
+    // Mini-map
+    const ratio = Math.max(0, Math.min(1, (camX - WORLD_MIN) / WORLD_SPAN));
+    youDot.style.left = (ratio * 100) + '%';
+    posReadout.textContent = `X ${String(Math.round(camX)).padStart(4,'0')} · Z ${String(Math.round(camY)).padStart(4,'0')}`;
+    // Room
+    if (camX < 3700) roomName.textContent = 'ROOM I · 遊戲館';
+    else if (camX < 5100) roomName.textContent = 'ATRIUM · 中庭';
+    else roomName.textContent = 'ROOM II · 概念設計館';
+  }
+
+  function setCam(x, y) {
+    camX = Math.max(WORLD_MIN, Math.min(WORLD_MAX, x));
+    camY = Math.max(-200, Math.min(200, y || 0));
+    update();
+  }
+
+  // Keyboard
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.key === 'ArrowRight' || e.key === 'd') setCam(camX + STEP, camY);
+    else if (e.key === 'ArrowLeft' || e.key === 'a') setCam(camX - STEP, camY);
+    else if (e.key === 'ArrowUp' || e.key === 'w') setCam(camX, camY - 60);
+    else if (e.key === 'ArrowDown' || e.key === 's') setCam(camX, camY + 60);
+    else if (e.key === 'Home') setCam(0, 0);
+    else if (e.key === 'Escape') closeDetail();
+  });
+
+  // Drag
+  let dragging = false, dragStart = null, camStart = null;
+  viewport.addEventListener('mousedown', (e) => {
+    dragging = true; dragStart = { x: e.clientX, y: e.clientY };
+    camStart = { x: camX, y: camY };
+    viewport.classList.add('dragging');
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - dragStart.x;
+    const dy = e.clientY - dragStart.y;
+    setCam(camStart.x - dx * 2.4, camStart.y - dy * 0.8);
+  });
+  window.addEventListener('mouseup', () => { dragging = false; viewport.classList.remove('dragging'); });
+
+  // Touch
+  let touchStart = null, touchCamStart = null;
+  viewport.addEventListener('touchstart', (e) => {
+    if (!e.touches[0]) return;
+    touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    touchCamStart = { x: camX, y: camY };
+  });
+  viewport.addEventListener('touchmove', (e) => {
+    if (!touchStart || !e.touches[0]) return;
+    const dx = e.touches[0].clientX - touchStart.x;
+    const dy = e.touches[0].clientY - touchStart.y;
+    setCam(touchCamStart.x - dx * 2.4, touchCamStart.y - dy * 0.8);
+  });
+
+  // Click on minimap to jump
+  minimap.addEventListener('click', (e) => {
+    const r = minimap.getBoundingClientRect();
+    const ratio = (e.clientX - r.left) / r.width;
+    setCam(WORLD_MIN + ratio * WORLD_SPAN, camY);
+  });
+
+  // Detail modal
+  const modal = document.getElementById('modal');
+  const modalCard = document.getElementById('modal-card');
+  function openDetail(e) {
+    const isConcept = e.type === 'concept';
+    modalCard.innerHTML = `
+      <button class="close" onclick="closeDetail()">×</button>
+      <div class="mono" style="font-size:11px;letter-spacing:0.22em;color:var(--gdc-orange);">${e.no} · ${isConcept ? 'CONCEPT' : 'GAME'}</div>
+      <h3>${e.title}</h3>
+      <div class="en">${e.titleEn} · ${isConcept ? e.medium : e.genre}</div>
+      <div class="hand" style="font-family:var(--f-hand);color:var(--gdc-blue);font-size:24px;margin-bottom:20px;display:inline-block;transform:rotate(-2deg);">「${e.tagline}」</div>
+      <p>${isConcept ? e.description : e.world}</p>
+      ${e.concept ? `<p style="color:var(--paper-faint);">${e.concept}</p>` : ''}
+      <div class="actions">
+        <a class="btn btn-primary" href="archive.html#${e.id}">→ 進入完整詳細頁</a>
+        <button class="btn" onclick="closeDetail()">繼續逛</button>
+      </div>
+    `;
+    modal.classList.add('open');
+  }
+  function closeDetail() { modal.classList.remove('open'); }
+  window.closeDetail = closeDetail;
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeDetail(); });
+
+  // Init
+  update();
+</script>
+
+</body>
+</html>

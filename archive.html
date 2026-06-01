@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Archive · NYCU GDC Showcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=JetBrains+Mono:wght@300;400;500&family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@300;400;600;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/tokens.css">
+<style>
+  body { background: var(--bg-stage); }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    background: rgba(10,10,16,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--paper-line);
+    padding: 16px var(--pad-edge);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 50;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+  .topbar a { color: var(--paper-dim); }
+  .topbar a:hover { color: var(--gdc-orange); }
+  .topbar nav { display: flex; gap: 24px; }
+
+  header.head {
+    padding: 80px var(--pad-edge) 40px;
+    border-bottom: 1px solid var(--paper-line);
+  }
+  header.head .meta {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gdc-orange);
+    margin-bottom: 24px;
+  }
+  header.head h1 {
+    font-family: var(--f-serif);
+    font-size: clamp(48px, 8vw, 120px);
+    font-weight: 600;
+    margin: 0;
+    line-height: 1;
+    letter-spacing: -0.01em;
+  }
+  header.head h1 em { color: var(--gdc-orange); font-style: italic; }
+  header.head .sub {
+    margin-top: 24px;
+    color: var(--paper-dim);
+    max-width: 640px;
+    line-height: 1.7;
+  }
+
+  .filter-bar {
+    padding: 24px var(--pad-edge);
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--paper-line);
+    background: var(--bg-rise);
+  }
+  .filter-bar .lbl {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    color: var(--paper-faint);
+  }
+  .filter-bar button {
+    background: transparent;
+    border: 1px solid var(--paper-line);
+    color: var(--paper-dim);
+    padding: 8px 16px;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .filter-bar button:hover, .filter-bar button.active {
+    background: var(--gdc-orange);
+    border-color: var(--gdc-orange);
+    color: var(--bg-deeper);
+  }
+  .filter-bar .grow { flex: 1; }
+  .filter-bar .count {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--paper-faint);
+  }
+
+  /* List rows */
+  .list { padding: 0 var(--pad-edge) 80px; }
+  .row {
+    display: grid;
+    grid-template-columns: 80px 100px 1fr auto auto;
+    gap: 32px;
+    padding: 28px 0;
+    border-bottom: 1px solid var(--paper-line);
+    align-items: center;
+    cursor: pointer;
+    transition: padding 0.3s;
+  }
+  .row:hover {
+    padding-left: 16px;
+    padding-right: 16px;
+    background: var(--bg-rise);
+  }
+  .row .no {
+    font-family: var(--f-serif);
+    font-size: 36px;
+    font-weight: 300;
+    color: var(--paper-line);
+    transition: color 0.2s;
+  }
+  .row:hover .no { color: var(--gdc-orange); }
+  .row .swatches { display: flex; gap: 4px; }
+  .row .swatches .sw { width: 18px; height: 60px; border: 1px solid var(--paper-line); }
+  .row .ttl-wrap .ttl {
+    font-family: var(--f-serif);
+    font-size: 28px;
+    font-weight: 600;
+  }
+  .row .ttl-wrap .en {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    color: var(--paper-faint);
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .row .ttl-wrap .tag-line {
+    font-family: var(--f-hand);
+    color: var(--gdc-blue);
+    font-size: 18px;
+    margin-top: 6px;
+    transform: rotate(-1deg);
+    display: inline-block;
+  }
+  .row .meta-col {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--paper-dim);
+    text-align: right;
+    line-height: 1.8;
+    text-transform: uppercase;
+  }
+  .row .arrow {
+    font-size: 20px;
+    color: var(--paper-faint);
+    transition: all 0.2s;
+  }
+  .row:hover .arrow { color: var(--gdc-orange); transform: translateX(8px); }
+
+  /* Detail page */
+  .detail { display: none; padding: 60px var(--pad-edge); }
+  .detail.open { display: block; }
+  .detail .back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--paper-dim);
+    margin-bottom: 40px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+  }
+  .detail .back:hover { color: var(--gdc-orange); }
+
+  .detail-hero {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: end;
+    border-bottom: 1px solid var(--paper-line);
+    padding-bottom: 40px;
+    margin-bottom: 40px;
+  }
+  .detail-hero .label {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--gdc-orange);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+  .detail-hero h2 {
+    font-family: var(--f-serif);
+    font-size: clamp(48px, 7vw, 96px);
+    font-weight: 600;
+    margin: 0;
+    line-height: 1;
+    letter-spacing: -0.01em;
+  }
+  .detail-hero .en {
+    font-family: var(--f-mono);
+    font-size: 13px;
+    letter-spacing: 0.22em;
+    color: var(--paper-faint);
+    margin-top: 12px;
+    text-transform: uppercase;
+  }
+  .detail-hero .tag-line {
+    font-family: var(--f-hand);
+    color: var(--gdc-blue);
+    font-size: 32px;
+    margin-top: 24px;
+    transform: rotate(-2deg);
+    display: inline-block;
+  }
+  .detail-hero .key-vis {
+    aspect-ratio: 4 / 3;
+    border: 1px solid var(--paper-line);
+    background:
+      repeating-linear-gradient(45deg, transparent 0, transparent 14px, rgba(255,255,255,0.025) 14px, rgba(255,255,255,0.025) 15px);
+    display: grid;
+    place-items: center;
+    color: var(--paper-faint);
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    position: relative;
+  }
+  .detail-hero .key-vis .big {
+    font-family: var(--f-serif);
+    font-size: 140px;
+    color: var(--paper-line);
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+  .detail-hero .key-vis .pill {
+    position: absolute;
+    top: 14px; left: 14px;
+    border: 1px solid var(--paper-line);
+    padding: 4px 10px;
+    font-size: 10px;
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 64px;
+    margin-bottom: 60px;
+  }
+  .detail-side .blk {
+    border-top: 1px solid var(--gdc-orange);
+    padding: 14px 0 24px;
+    margin-bottom: 24px;
+  }
+  .detail-side .blk h4 {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--paper-faint);
+    margin: 0 0 8px;
+  }
+  .detail-side .blk p {
+    margin: 0;
+    color: var(--paper);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .detail-side .pal { display: flex; gap: 6px; }
+  .detail-side .pal .sw { width: 32px; height: 32px; border: 1px solid var(--paper-line); }
+
+  .detail-main h3 {
+    font-family: var(--f-serif);
+    font-size: 32px;
+    margin: 0 0 16px;
+  }
+  .detail-main p {
+    color: var(--paper-dim);
+    line-height: 1.85;
+    font-size: 16px;
+    margin-bottom: 32px;
+  }
+  .detail-main h3 + p { font-size: 18px; }
+
+  .detail-main .gameplay-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 32px;
+    border-top: 1px solid var(--paper-line);
+  }
+  .detail-main .gameplay-list li {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--paper-line);
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    gap: 24px;
+    color: var(--paper-dim);
+  }
+  .detail-main .gameplay-list .idx {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--gdc-orange);
+    letter-spacing: 0.22em;
+  }
+
+  .review {
+    padding: 32px;
+    border: 1px solid var(--gdc-blue);
+    background: rgba(61, 181, 255, 0.04);
+    margin-bottom: 32px;
+    position: relative;
+  }
+  .review::before {
+    content: "“";
+    position: absolute;
+    top: -18px; left: 20px;
+    font-family: var(--f-serif);
+    font-size: 80px;
+    color: var(--gdc-blue);
+    line-height: 1;
+  }
+  .review .q { font-family: var(--f-serif); font-size: 20px; line-height: 1.6; }
+  .review .from { margin-top: 12px; font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.22em; color: var(--paper-faint); text-transform: uppercase; }
+
+  .team-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1px;
+    background: var(--paper-line);
+    border: 1px solid var(--paper-line);
+    margin-bottom: 32px;
+  }
+  .team-row .p { background: var(--bg-rise); padding: 20px; }
+  .team-row .p .role {
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    color: var(--paper-faint);
+    text-transform: uppercase;
+  }
+  .team-row .p .name { font-family: var(--f-serif); font-size: 22px; margin-top: 6px; }
+
+  .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+
+  /* Hide list view when detail is open */
+  body.viewing-detail .head, body.viewing-detail .filter-bar, body.viewing-detail .list { display: none; }
+
+  @media (max-width: 720px) {
+    .row { grid-template-columns: 60px 60px 1fr auto; gap: 16px; }
+    .row .meta-col { display: none; }
+    .row .swatches .sw { height: 40px; width: 12px; }
+    .detail-hero { grid-template-columns: 1fr; }
+    .detail-grid { grid-template-columns: 1fr; gap: 32px; }
+  }
+</style>
+</head>
+<body class="grain">
+
+<div class="topbar">
+  <a href="index.html">← 入口</a>
+  <nav>
+    <a href="perform.html">Performance</a>
+    <a href="gallery.html">Gallery</a>
+    <a href="archive.html" style="color:var(--gdc-orange);">Archive</a>
+    <a href="wall.html">Wall</a>
+  </nav>
+</div>
+
+<header class="head">
+  <div class="meta">ARCHIVE / INDEX · 作品索引</div>
+  <h1>十件作品，<em>一份目錄</em>。</h1>
+  <p class="sub">這裡是所有作品的完整清單。可篩選類型、點擊任一作品看詳細資料：世界觀、玩法、團隊、評語、可玩連結，以及製作過程的點滴。</p>
+</header>
+
+<div class="filter-bar">
+  <span class="lbl">FILTER ·</span>
+  <button data-f="all" class="active">全部 (10)</button>
+  <button data-f="game">遊戲組</button>
+  <button data-f="concept">概念設計組</button>
+  <span class="grow"></span>
+  <span class="count" id="count">10 ITEMS</span>
+</div>
+
+<div class="list" id="list"></div>
+
+<div class="detail" id="detail"></div>
+
+<script src="data/exhibits.js"></script>
+<script>
+  const list = document.getElementById('list');
+  const detail = document.getElementById('detail');
+  const countEl = document.getElementById('count');
+
+  function renderList(filter) {
+    list.innerHTML = '';
+    const items = window.EXHIBITS.filter(e => filter === 'all' || e.type === filter);
+    countEl.textContent = `${items.length} ITEMS`;
+    items.forEach(e => {
+      const isConcept = e.type === 'concept';
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML = `
+        <div class="no">${e.no}</div>
+        <div class="swatches">
+          ${e.palette.map(c => `<div class="sw" style="background:${c}"></div>`).join('')}
+        </div>
+        <div class="ttl-wrap">
+          <div class="ttl">${e.title}</div>
+          <div class="en">${e.titleEn} · ${isConcept ? e.medium : e.genre}</div>
+          <div class="tag-line">「${e.tagline}」</div>
+        </div>
+        <div class="meta-col">
+          ${isConcept ? `${e.designers.length} 位設計者<br>${e.finals} 件成品` : `${e.team.length} 人團隊<br>${e.download.split(' ')[0]}`}
+        </div>
+        <div class="arrow">→</div>
+      `;
+      row.addEventListener('click', () => openDetail(e.id));
+      list.appendChild(row);
+    });
+  }
+
+  function openDetail(id) {
+    const e = window.EXHIBIT_BY_ID[id];
+    if (!e) return;
+    const isConcept = e.type === 'concept';
+    location.hash = id;
+    document.body.classList.add('viewing-detail');
+
+    detail.innerHTML = `
+      <button class="back" onclick="closeDetail()">← 返回索引</button>
+      <div class="detail-hero">
+        <div>
+          <div class="label">${e.no} · ${isConcept ? 'CONCEPT' : 'GAME'} / ACT</div>
+          <h2>${e.title}</h2>
+          <div class="en">${e.titleEn} · ${isConcept ? e.medium : e.genre}</div>
+          <div class="tag-line">「${e.tagline}」</div>
+        </div>
+        <div class="key-vis" style="${e.image ? `background-image:linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(0,0,0,0.55)), url('${e.image}');background-size:cover;background-position:center;` : ''}">
+          <div class="pill">KEY VISUAL · ${e.titleEn}</div>
+          ${e.image ? '' : `<div style="text-align:center;"><div class="big">${e.no}</div><div>主視覺 PLACEHOLDER</div></div>`}
+        </div>
+        ${e.gallery && e.gallery.length > 1 ? `
+          <div style="grid-column:1 / -1; display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-top:-16px;margin-bottom:24px;">
+            ${e.gallery.slice(1).map(src => `<div style="aspect-ratio:4/3;background:url('${src}') center/cover;border:1px solid var(--paper-line);"></div>`).join('')}
+          </div>` : ''}
+      </div>
+
+      <div class="detail-grid">
+        <aside class="detail-side">
+          <div class="blk"><h4>Type</h4><p>${isConcept ? '概念設計組 / Concept' : '遊戲組 / Game'}</p></div>
+          <div class="blk"><h4>${isConcept ? 'Medium' : 'Genre'}</h4><p>${isConcept ? e.medium : e.genre}</p></div>
+          <div class="blk"><h4>Palette</h4><div class="pal">${e.palette.map(c => `<div class="sw" style="background:${c}" title="${c}"></div>`).join('')}</div></div>
+          ${isConcept
+            ? `<div class="blk"><h4>Output</h4><p>${e.sketches} 張草圖<br>${e.finals} 件最終定稿</p></div>`
+            : `<div class="blk"><h4>Status</h4><p>${e.download}</p></div>
+               <div class="blk"><h4>Audio</h4><p>${e.audio}</p></div>`}
+        </aside>
+
+        <main class="detail-main">
+          <h3>${isConcept ? '創作敘述' : '世界觀'}</h3>
+          <p>${isConcept ? e.description : e.world}</p>
+
+          ${e.concept ? `<h3>設計理念</h3><p>${e.concept}</p>` : ''}
+
+          ${!isConcept ? `
+            <h3>玩法機制</h3>
+            <ul class="gameplay-list">
+              ${e.gameplay.map((g, i) => `<li><span class="idx">M.${String(i+1).padStart(2,'0')}</span><span>${g}</span></li>`).join('')}
+            </ul>
+          ` : ''}
+
+          ${e.review ? `
+            <h3>${isConcept ? '評語' : '公開評語'}</h3>
+            <div class="review">
+              <div class="q">${e.review.split('—')[0].trim()}</div>
+              <div class="from">— ${e.review.split('—')[1] ? e.review.split('—')[1].trim() : ''}</div>
+            </div>
+          ` : ''}
+
+          <h3>${isConcept ? '設計者' : '製作團隊'}</h3>
+          <div class="team-row">
+            ${(isConcept ? e.designers.map(d => ({ name: d, role: 'CONCEPT DESIGNER' })) : e.team.map(t => {
+              const [name, role] = t.split(' / ');
+              return { name, role: role || '' };
+            })).map(p => `<div class="p"><div class="role">${p.role}</div><div class="name">${p.name}</div></div>`).join('')}
+          </div>
+
+          ${!isConcept ? `
+            <div class="actions">
+              <a class="btn btn-primary" href="#">↓ ${e.download}</a>
+              <a class="btn" href="perform.html#act-${e.id}">在表演中找到這幕</a>
+              <a class="btn" href="gallery.html">回展場</a>
+            </div>
+          ` : `
+            <div class="actions">
+              <a class="btn btn-primary" href="perform.html#act-${e.id}">在表演中找到這幕</a>
+              <a class="btn" href="gallery.html">回展場</a>
+            </div>
+          `}
+        </main>
+      </div>
+    `;
+    detail.classList.add('open');
+    window.scrollTo(0, 0);
+  }
+
+  function closeDetail() {
+    detail.classList.remove('open');
+    document.body.classList.remove('viewing-detail');
+    history.replaceState(null, '', 'archive.html');
+  }
+  window.closeDetail = closeDetail;
+
+  // Filter buttons
+  document.querySelectorAll('.filter-bar button').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.filter-bar button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      renderList(b.dataset.f);
+    });
+  });
+
+  renderList('all');
+
+  // Open from hash
+  if (location.hash) {
+    const id = location.hash.slice(1);
+    if (window.EXHIBIT_BY_ID[id]) openDetail(id);
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Signature Wall · NYCU GDC Showcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=JetBrains+Mono:wght@300;400;500&family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@300;400;600;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/tokens.css">
+<style>
+  body { background: var(--bg-stage); min-height: 100vh; }
+
+  .topbar {
+    position: sticky; top: 0;
+    background: rgba(10,10,16,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--paper-line);
+    padding: 16px var(--pad-edge);
+    display: flex; align-items: center; justify-content: space-between;
+    z-index: 50;
+    font-family: var(--f-mono); font-size: 11px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+  }
+  .topbar a { color: var(--paper-dim); }
+  .topbar a:hover { color: var(--gdc-orange); }
+  .topbar nav { display: flex; gap: 24px; }
+
+  header.head {
+    padding: 80px var(--pad-edge) 40px;
+    border-bottom: 1px solid var(--paper-line);
+    text-align: center;
+  }
+  header.head .meta {
+    font-family: var(--f-mono);
+    font-size: 11px; letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gdc-orange);
+    margin-bottom: 24px;
+  }
+  header.head h1 {
+    font-family: var(--f-serif);
+    font-size: clamp(48px, 8vw, 120px);
+    font-weight: 600; margin: 0;
+    line-height: 0.95;
+    letter-spacing: -0.01em;
+  }
+  header.head h1 em { color: var(--gdc-orange); font-style: italic; }
+  header.head .sub {
+    margin: 24px auto 0;
+    color: var(--paper-dim);
+    max-width: 600px; line-height: 1.7;
+  }
+  header.head .hand {
+    font-family: var(--f-hand);
+    color: var(--gdc-blue);
+    font-size: 36px;
+    margin-top: 24px;
+    transform: rotate(-2deg);
+    display: inline-block;
+  }
+
+  /* Form */
+  .compose {
+    max-width: 720px;
+    margin: 40px auto;
+    padding: 32px;
+    background: var(--bg-rise);
+    border: 1px solid var(--paper-line);
+    position: relative;
+  }
+  .compose h3 {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gdc-orange);
+    margin: 0 0 20px;
+  }
+  .compose textarea {
+    width: 100%;
+    min-height: 100px;
+    background: var(--bg-stage);
+    border: 1px solid var(--paper-line);
+    color: var(--paper);
+    padding: 14px;
+    font-family: var(--f-hand);
+    font-size: 22px;
+    line-height: 1.5;
+    resize: vertical;
+    outline: none;
+  }
+  .compose textarea:focus { border-color: var(--gdc-orange); }
+  .compose .row {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 12px;
+  }
+  .compose input[type=text] {
+    background: var(--bg-stage);
+    border: 1px solid var(--paper-line);
+    color: var(--paper);
+    padding: 10px 14px;
+    font-family: var(--f-sans);
+    font-size: 14px;
+    outline: none;
+  }
+  .compose input[type=text]:focus { border-color: var(--gdc-orange); }
+  .compose select {
+    background: var(--bg-stage);
+    border: 1px solid var(--paper-line);
+    color: var(--paper);
+    padding: 10px 14px;
+    font-family: var(--f-mono);
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    outline: none;
+  }
+  .compose .submit {
+    background: var(--gdc-orange);
+    border: none;
+    color: var(--bg-deeper);
+    padding: 12px 24px;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    cursor: pointer;
+    grid-column: 1 / -1;
+    transition: background 0.2s;
+  }
+  .compose .submit:hover { background: var(--paper); }
+
+  .compose .color-pick {
+    display: flex; gap: 8px; align-items: center;
+    margin-top: 12px;
+    font-family: var(--f-mono); font-size: 11px;
+    letter-spacing: 0.18em; color: var(--paper-faint);
+    text-transform: uppercase;
+  }
+  .compose .color-pick .dot {
+    width: 24px; height: 24px;
+    border: 2px solid transparent;
+    cursor: pointer;
+  }
+  .compose .color-pick .dot.active { border-color: var(--paper); }
+
+  /* Wall */
+  .wall {
+    padding: 60px var(--pad-edge) 100px;
+    position: relative;
+    min-height: 70vh;
+  }
+  .wall-grid {
+    columns: 4 280px;
+    column-gap: 16px;
+  }
+  .note {
+    break-inside: avoid;
+    margin-bottom: 16px;
+    padding: 24px;
+    border: 1px solid var(--paper-line);
+    background: var(--bg-rise);
+    transform: rotate(var(--r, 0deg));
+    transition: transform 0.3s, box-shadow 0.3s;
+    position: relative;
+    cursor: default;
+  }
+  .note:hover {
+    transform: rotate(0deg) scale(1.03);
+    box-shadow: 0 20px 40px -10px rgba(0,0,0,0.6);
+    z-index: 2;
+  }
+  .note.c-orange { background: oklch(0.32 0.10 55); border-color: var(--gdc-orange); }
+  .note.c-blue { background: oklch(0.30 0.08 235); border-color: var(--gdc-blue); }
+  .note.c-paper { background: oklch(0.86 0.012 80); color: var(--bg-deeper); }
+  .note.c-paper .name, .note.c-paper .ref { color: oklch(0.40 0.012 80); }
+
+  .note .body {
+    font-family: var(--f-hand);
+    font-size: 22px;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+  .note .foot {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px dashed currentColor;
+    opacity: 0.7;
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .note .ref { color: var(--gdc-orange); }
+  .note.c-orange .ref, .note.c-blue .ref { color: var(--paper); }
+
+  .empty-hint {
+    text-align: center;
+    color: var(--paper-faint);
+    font-family: var(--f-hand);
+    font-size: 28px;
+    padding: 80px 0;
+  }
+
+  /* Footer */
+  footer {
+    padding: 40px var(--pad-edge);
+    border-top: 1px solid var(--paper-line);
+    text-align: center;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    color: var(--paper-faint);
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 720px) {
+    .compose .row { grid-template-columns: 1fr; }
+    .wall-grid { columns: 1; }
+  }
+</style>
+</head>
+<body class="grain">
+
+<div class="topbar">
+  <a href="index.html">← 入口</a>
+  <nav>
+    <a href="perform.html">Performance</a>
+    <a href="gallery.html">Gallery</a>
+    <a href="archive.html">Archive</a>
+    <a href="wall.html" style="color:var(--gdc-orange);">Wall</a>
+  </nav>
+</div>
+
+<header class="head">
+  <div class="meta">SIGNATURE WALL · 留言／簽名牆</div>
+  <h1>留下<em>一句</em>什麼。</h1>
+  <p class="sub">看完展覽的你，覺得哪一件作品讓你停下來？或是想對某一組說一句話？這面牆會記得你來過。</p>
+  <div class="hand">— thanks for visiting!</div>
+</header>
+
+<section class="compose">
+  <h3>WRITE A NOTE · 留下一張</h3>
+  <textarea id="msg" placeholder="想說什麼都可以…" maxlength="160"></textarea>
+  <div class="row">
+    <input type="text" id="nm" placeholder="你的名字（暱稱也行）" maxlength="20">
+    <select id="ref">
+      <option value="">— 想留給哪一件作品？（選填）</option>
+    </select>
+    <span></span>
+  </div>
+  <div class="color-pick">
+    <span>顏色 ·</span>
+    <div class="dot active" data-c="" style="background:var(--bg-stage); border-color:var(--paper-line);"></div>
+    <div class="dot" data-c="c-orange" style="background:var(--gdc-orange);"></div>
+    <div class="dot" data-c="c-blue" style="background:var(--gdc-blue);"></div>
+    <div class="dot" data-c="c-paper" style="background:oklch(0.86 0.012 80);"></div>
+  </div>
+  <div class="row" style="margin-top:20px;">
+    <button class="submit" id="post">↑ 貼上去</button>
+  </div>
+</section>
+
+<section class="wall">
+  <div class="wall-grid" id="wall"></div>
+  <div class="empty-hint" id="empty" style="display:none;">這面牆還空空的。<br>第一個來的人會被記得。</div>
+</section>
+
+<footer>
+  © 2026 NYCU GDC · Showcase Committee · Fun to Play, Play to Live, Live for Fun
+</footer>
+
+<script src="data/exhibits.js"></script>
+<script>
+  // Pre-seeded notes (so wall feels alive even on first visit)
+  const SEED = [
+    { msg: "薄暮分部的 BossRush 好硬核！閃 pattern 閃到手心冒汗，但每次過關超爽。", nm: "阿恩", ref: "lobotomy-twilight", c: "c-orange" },
+    { msg: "身為 Project Moon 粉，看到同人做成這樣真的會哭，異想體的演出有抓到味道。", nm: "管理員", ref: "lobotomy-twilight", c: "" },
+    { msg: "Deep Dragon Fantasy 四個 Round 主題也太荒謬，但玩起來意外地順，召喚隕石擊飛公主笑死。", nm: "馬鈴薯王", ref: "deep-dragon-fantasy", c: "c-blue" },
+    { msg: "台式理髮那間場景，連熱水器和藤椅椅套都做出來了，光影超溫柔，好懷念。", nm: "M", ref: "barber-taiwanese", c: "c-paper" },
+    { msg: "雪山寺廟破曉那張，影子拉好長，氣氛直接封神。", nm: "三畫", ref: "snow-temple", c: "" },
+    { msg: "謝謝你們做了這場展。從 Unity、Blender 課一路看到大家做出完整作品，真的很感動。", nm: "蔡老師", ref: "", c: "c-paper" },
+    { msg: "看完表演模式才發現一學期大家做了這麼多。辛苦了！", nm: "學長", ref: "", c: "c-orange" },
+  ];
+
+  const STORE_KEY = 'gdc-showcase-wall-2026-v2';
+  function load() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch { return []; }
+  }
+  function save(notes) { localStorage.setItem(STORE_KEY, JSON.stringify(notes)); }
+
+  // Init: if no stored, seed
+  let notes = load();
+  if (notes.length === 0) {
+    notes = SEED.map((s, i) => ({ ...s, t: Date.now() - (SEED.length - i) * 86400000 }));
+    save(notes);
+  }
+
+  // Populate ref select
+  const refSelect = document.getElementById('ref');
+  window.EXHIBITS.forEach(e => {
+    const opt = document.createElement('option');
+    opt.value = e.id;
+    opt.textContent = `${e.no} · ${e.title}`;
+    refSelect.appendChild(opt);
+  });
+
+  // Color picker
+  let chosenColor = '';
+  document.querySelectorAll('.color-pick .dot').forEach(d => {
+    d.addEventListener('click', () => {
+      document.querySelectorAll('.color-pick .dot').forEach(x => x.classList.remove('active'));
+      d.classList.add('active');
+      chosenColor = d.dataset.c || '';
+    });
+  });
+
+  // Render wall
+  const wallEl = document.getElementById('wall');
+  const emptyEl = document.getElementById('empty');
+  function render() {
+    wallEl.innerHTML = '';
+    if (notes.length === 0) { emptyEl.style.display = 'block'; return; }
+    emptyEl.style.display = 'none';
+
+    // sort newest first
+    const sorted = [...notes].sort((a, b) => b.t - a.t);
+    sorted.forEach((n, i) => {
+      const r = ((i * 47) % 7 - 3) * 0.6; // small random rotation
+      const exhibit = n.ref ? window.EXHIBIT_BY_ID[n.ref] : null;
+      const refLabel = exhibit ? `→ ${exhibit.no} ${exhibit.title}` : '';
+      const dt = new Date(n.t);
+      const dStr = `${dt.getMonth()+1}/${dt.getDate()}`;
+
+      const div = document.createElement('div');
+      div.className = `note ${n.c || ''}`;
+      div.style.setProperty('--r', r + 'deg');
+      div.innerHTML = `
+        <div class="body">${escapeHtml(n.msg)}</div>
+        <div class="foot">
+          <span class="name">— ${escapeHtml(n.nm || 'anonymous')} · ${dStr}</span>
+          <span class="ref">${refLabel}</span>
+        </div>
+      `;
+      wallEl.appendChild(div);
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // Post
+  document.getElementById('post').addEventListener('click', () => {
+    const msg = document.getElementById('msg').value.trim();
+    const nm = document.getElementById('nm').value.trim() || 'anonymous';
+    const ref = document.getElementById('ref').value;
+    if (!msg) {
+      document.getElementById('msg').focus();
+      return;
+    }
+    notes.push({ msg, nm, ref, c: chosenColor, t: Date.now() });
+    save(notes);
+    document.getElementById('msg').value = '';
+    render();
+    // Smooth scroll to wall start
+    document.querySelector('.wall').scrollIntoView({ behavior: 'auto', block: 'start' });
+  });
+
+  render();
+</script>
+
+</body>
+</html>

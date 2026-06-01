@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NYCU GDC 期末 Showcase 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=JetBrains+Mono:wght@300;400;500&family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@300;400;600;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/tokens.css">
+<style>
+  body { overflow-x: hidden; }
+
+  .marquee-strip {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 32px;
+    background: var(--gdc-orange);
+    color: var(--bg-deeper);
+    overflow: hidden;
+    z-index: 50;
+    border-bottom: 1px solid var(--bg-deeper);
+    display: flex;
+    align-items: center;
+  }
+  .marquee-track {
+    display: flex;
+    gap: 48px;
+    animation: marquee 60s linear infinite;
+    white-space: nowrap;
+    font-family: var(--f-mono);
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .marquee-track > span { display: inline-flex; align-items: center; gap: 48px; }
+  .marquee-track > span::after { content: "✦"; }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  .topbar {
+    position: fixed;
+    top: 32px;
+    left: 0; right: 0;
+    padding: 18px var(--pad-edge);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 40;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+  .brand { display: flex; align-items: center; gap: 14px; color: var(--paper); }
+  .brand-mark {
+    width: 28px; height: 28px; border: 1px solid var(--paper);
+    display: grid; place-items: center;
+    font-family: var(--f-serif); font-weight: 900; font-size: 13px;
+    letter-spacing: 0;
+  }
+  .topbar nav { display: flex; gap: 28px; color: var(--paper-dim); }
+  .topbar nav a:hover { color: var(--gdc-orange); }
+
+  .hero {
+    min-height: 100vh;
+    padding: 140px var(--pad-edge) 100px;
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr;
+    align-content: center;
+  }
+  .hero-meta {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--paper-faint);
+    margin-bottom: 48px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--paper-line);
+  }
+
+  .hero-title {
+    font-family: var(--f-serif);
+    font-weight: 900;
+    font-size: clamp(56px, 13vw, 200px);
+    line-height: 0.92;
+    letter-spacing: -0.02em;
+    margin: 0;
+    color: var(--paper);
+    position: relative;
+  }
+  .hero-title .small {
+    display: block;
+    font-size: clamp(20px, 2.4vw, 36px);
+    font-weight: 300;
+    letter-spacing: 0.04em;
+    color: var(--paper-dim);
+    margin-bottom: 12px;
+    font-family: var(--f-sans);
+  }
+  .hero-title em {
+    font-style: italic;
+    color: var(--gdc-orange);
+    font-weight: 400;
+  }
+  .hand-stamp {
+    font-family: var(--f-hand);
+    color: var(--gdc-blue);
+    font-size: clamp(28px, 3.2vw, 48px);
+    transform: rotate(-6deg);
+    display: inline-block;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  .hero-sub {
+    margin-top: 36px;
+    max-width: 720px;
+    font-size: 17px;
+    line-height: 1.75;
+    color: var(--paper-dim);
+  }
+
+  .hero-bottom {
+    margin-top: 64px;
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+  .scroll-hint {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--paper-faint);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .scroll-line {
+    display: inline-block;
+    width: 60px;
+    height: 1px;
+    background: var(--paper-faint);
+    position: relative;
+    overflow: hidden;
+  }
+  .scroll-line::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--gdc-orange);
+    animation: hint 2.5s ease-in-out infinite;
+  }
+  @keyframes hint {
+    0% { transform: translateX(-100%); }
+    50% { transform: translateX(0); }
+    100% { transform: translateX(100%); }
+  }
+
+  /* Spotlight follows cursor */
+  .spot {
+    position: fixed;
+    pointer-events: none;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,138,61,0.10) 0%, rgba(255,138,61,0) 60%);
+    transform: translate(-50%, -50%);
+    z-index: 1;
+    transition: opacity 0.4s;
+  }
+
+  /* Two doors */
+  .doors {
+    padding: 40px var(--pad-edge) 80px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 24px;
+    position: relative;
+    z-index: 2;
+  }
+  .door {
+    position: relative;
+    background: var(--bg-rise);
+    border: 1px solid var(--paper-line);
+    padding: 36px 32px 32px;
+    min-height: 460px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+  }
+  .door:hover {
+    background: var(--bg-card);
+    border-color: var(--paper-dim);
+    transform: translateY(-4px);
+  }
+  .door-hd {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--paper-faint);
+  }
+  .door-num {
+    font-family: var(--f-serif);
+    font-size: 96px;
+    font-weight: 300;
+    line-height: 1;
+    color: var(--paper-line);
+    transition: color 0.3s;
+  }
+  .door:hover .door-num { color: var(--gdc-orange); }
+
+  .door-title {
+    font-family: var(--f-serif);
+    font-size: 44px;
+    font-weight: 600;
+    line-height: 1.05;
+    margin: 16px 0 8px;
+  }
+  .door-title-en {
+    font-family: var(--f-mono);
+    font-size: 13px;
+    color: var(--paper-faint);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .door-desc {
+    margin-top: 24px;
+    color: var(--paper-dim);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  .door-foot {
+    margin-top: 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--paper-dim);
+    padding-top: 20px;
+    border-top: 1px solid var(--paper-line);
+  }
+  .door-arrow {
+    font-size: 22px;
+    transition: transform 0.3s;
+  }
+  .door:hover .door-arrow { transform: translateX(8px); color: var(--gdc-orange); }
+
+  /* Visual signatures inside doors */
+  .door-vis {
+    margin: 24px -32px;
+    height: 140px;
+    position: relative;
+    overflow: hidden;
+    border-top: 1px solid var(--paper-line);
+    border-bottom: 1px solid var(--paper-line);
+  }
+  .vis-perform {
+    background:
+      linear-gradient(to bottom,
+        transparent 0%,
+        rgba(255,138,61,0.08) 50%,
+        transparent 100%);
+  }
+  .vis-perform::before, .vis-perform::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0;
+    height: 1px;
+    background: var(--gdc-orange);
+    opacity: 0.4;
+  }
+  .vis-perform::before { top: 30%; }
+  .vis-perform::after { top: 70%; }
+  .vis-perform .play-line {
+    position: absolute;
+    top: 50%; left: 0; right: 0;
+    height: 2px;
+    background: var(--gdc-orange);
+    transform: translateY(-50%);
+  }
+  .vis-perform .play-dot {
+    position: absolute;
+    top: 50%; left: 30%;
+    width: 12px; height: 12px;
+    background: var(--gdc-orange);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    animation: travel 3s ease-in-out infinite alternate;
+  }
+  @keyframes travel { to { left: 70%; } }
+
+  .vis-gallery {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+    padding: 12px;
+    perspective: 400px;
+  }
+  .vis-gallery .b {
+    background: var(--bg-card);
+    border: 1px solid var(--paper-line);
+    transform-origin: bottom;
+    transition: transform 0.4s;
+  }
+  .door:hover .vis-gallery .b:nth-child(odd) { transform: rotateX(15deg); }
+  .door:hover .vis-gallery .b:nth-child(even) { transform: rotateX(-10deg); background: var(--gdc-blue-soft); opacity: 0.4; }
+
+  .vis-index {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 6px;
+    padding: 12px;
+  }
+  .vis-index .c {
+    background: var(--bg-card);
+    border: 1px solid var(--paper-line);
+    display: flex;
+    align-items: end;
+    padding: 6px;
+    font-family: var(--f-mono);
+    font-size: 9px;
+    color: var(--paper-faint);
+  }
+
+  /* Stats */
+  .stats {
+    padding: 40px var(--pad-edge) 60px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1px;
+    background: var(--paper-line);
+    margin: 0 var(--pad-edge);
+    border: 1px solid var(--paper-line);
+  }
+  .stats { padding: 0; margin-top: 60px; margin-bottom: 60px; }
+  .stat {
+    background: var(--bg-stage);
+    padding: 32px 24px;
+  }
+  .stat-num {
+    font-family: var(--f-serif);
+    font-size: 56px;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--paper);
+  }
+  .stat-num em {
+    font-family: var(--f-hand);
+    font-style: normal;
+    color: var(--gdc-blue);
+    font-size: 0.6em;
+    margin-left: 6px;
+  }
+  .stat-label {
+    margin-top: 12px;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--paper-faint);
+  }
+
+  /* Footer */
+  footer {
+    padding: 60px var(--pad-edge) 40px;
+    border-top: 1px solid var(--paper-line);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 40px;
+    font-size: 13px;
+  }
+  footer h4 {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--paper-faint);
+    margin: 0 0 16px;
+  }
+  footer ul { list-style: none; padding: 0; margin: 0; line-height: 2; color: var(--paper-dim); }
+  footer ul li:hover { color: var(--gdc-orange); cursor: pointer; }
+  .colophon {
+    grid-column: 1 / -1;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--paper-line);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--paper-faint);
+  }
+
+  /* Responsive */
+  @media (max-width: 720px) {
+    .topbar nav { display: none; }
+    .door { min-height: 380px; padding: 24px 20px; }
+    .door-num { font-size: 72px; }
+    .door-title { font-size: 32px; }
+    .door-vis { margin: 20px -20px; height: 100px; }
+  }
+</style>
+</head>
+<body class="grain">
+
+<!-- Marquee strip -->
+<div class="marquee-strip" aria-hidden="true">
+  <div class="marquee-track">
+    <span>NYCU GDC FINAL SHOWCASE 2026</span>
+    <span>FUN TO PLAY ✦ PLAY TO LIVE ✦ LIVE FOR FUN</span>
+    <span>4 EXHIBITS · 2 GAMES · 2 CONCEPTS</span>
+    <span>OPEN 24/7 · ONLINE EXHIBITION</span>
+    <span>NYCU GDC FINAL SHOWCASE 2026</span>
+    <span>FUN TO PLAY ✦ PLAY TO LIVE ✦ LIVE FOR FUN</span>
+    <span>4 EXHIBITS · 2 GAMES · 2 CONCEPTS</span>
+    <span>OPEN 24/7 · ONLINE EXHIBITION</span>
+  </div>
+</div>
+
+<!-- Top bar -->
+<header class="topbar">
+  <a href="index.html" class="brand">
+    <div class="brand-mark">G</div>
+    <span>NYCU GDC / Showcase '26</span>
+  </a>
+  <nav>
+    <a href="perform.html">Performance</a>
+    <a href="gallery.html">Gallery</a>
+    <a href="archive.html">Archive</a>
+    <a href="wall.html">Signature Wall</a>
+  </nav>
+</header>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-meta">
+    <span>FINAL SHOWCASE / VOL.06</span>
+    <span>2026 · SUMMER</span>
+    <span>陽明交通大學 遊戲設計社</span>
+    <span>NOW SHOWING</span>
+  </div>
+
+  <h1 class="hero-title">
+    <span class="small">A Stage for Four Worlds —</span>
+    四件作品，<em>一場展演</em>
+    <span class="hand-stamp">welcome!</span>
+  </h1>
+
+  <p class="hero-sub">
+    這是 NYCU 遊戲設計社本年度的課程成果發表。四件作品——兩款遊戲、兩組 3D 場景概念設計——以線上展覽的形式呈現。你可以選擇坐下來，看一場由我們編排的演出；或是推開門，自由地在展場中走動，發掘你想停下的角落。
+  </p>
+
+  <div class="hero-bottom">
+    <div class="scroll-hint">
+      <span>Scroll · 向下選擇進入方式</span>
+      <span class="scroll-line"></span>
+    </div>
+    <div class="mono" style="font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:var(--paper-faint);">
+      EST. 2020 · GDC# / Game Design Club
+    </div>
+  </div>
+</section>
+
+<!-- Stats strip -->
+<section class="stats">
+  <div class="stat">
+    <div class="stat-num">4<em>件</em></div>
+    <div class="stat-label">Exhibits</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">18<em>位</em></div>
+    <div class="stat-label">Designers</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">2<em>門</em></div>
+    <div class="stat-label">Courses · Unity / Blender</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">∞</div>
+    <div class="stat-label">Sleepless Nights</div>
+  </div>
+</section>
+
+<!-- Two doors -->
+<section class="doors">
+  <a class="door corner-marks" href="perform.html">
+    <span class="cm-bl"></span><span class="cm-br"></span>
+    <div class="door-hd">
+      <span>MODE_01 · 表演</span>
+      <span>≈ 10 MIN</span>
+    </div>
+    <div>
+      <div class="door-num">01</div>
+      <div class="door-title">看一場演出</div>
+      <div class="door-title-en">PERFORMANCE</div>
+      <div class="door-desc">
+        坐下來，調暗燈光。我們以捲軸的形式編排了一場演出——你只需要往下滑，作品會一幕幕走向你。適合第一次來訪。
+      </div>
+    </div>
+    <div class="door-vis vis-perform">
+      <div class="play-line"></div>
+      <div class="play-dot"></div>
+    </div>
+    <div class="door-foot">
+      <span>Scroll-driven · Linear</span>
+      <span class="door-arrow">→</span>
+    </div>
+  </a>
+
+  <a class="door corner-marks" href="gallery.html">
+    <span class="cm-bl"></span><span class="cm-br"></span>
+    <div class="door-hd">
+      <span>MODE_02 · 展場</span>
+      <span>FREE ROAM</span>
+    </div>
+    <div>
+      <div class="door-num">02</div>
+      <div class="door-title">逛一座展場</div>
+      <div class="door-title-en">VIRTUAL GALLERY</div>
+      <div class="door-desc">
+        像在實體展場一樣自由走動。三進式的虛擬空間：遊戲館、中庭、概念設計館。可以拉近、停下、回頭——挑你想看的看。
+      </div>
+    </div>
+    <div class="door-vis vis-gallery">
+      <div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div>
+      <div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div>
+    </div>
+    <div class="door-foot">
+      <span>3D Space · Explore</span>
+      <span class="door-arrow">→</span>
+    </div>
+  </a>
+
+  <a class="door corner-marks" href="archive.html">
+    <span class="cm-bl"></span><span class="cm-br"></span>
+    <div class="door-hd">
+      <span>MODE_03 · 索引</span>
+      <span>4 ITEMS</span>
+    </div>
+    <div>
+      <div class="door-num">03</div>
+      <div class="door-title">查一份目錄</div>
+      <div class="door-title-en">ARCHIVE / INDEX</div>
+      <div class="door-desc">
+        如果你已經知道在找什麼。所有作品的清單檢視，可篩選類型、團隊、媒材，直接跳到任一作品的詳細頁。
+      </div>
+    </div>
+    <div class="door-vis vis-index">
+      <div class="c">01</div><div class="c">02</div><div class="c">C1</div><div class="c">C2</div>
+    </div>
+    <div class="door-foot">
+      <span>List · Filter</span>
+      <span class="door-arrow">→</span>
+    </div>
+  </a>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div>
+    <h4>About</h4>
+    <ul>
+      <li>關於本展</li>
+      <li>NYCU GDC 社團</li>
+      <li>2026 籌辦團隊</li>
+      <li>聯絡我們</li>
+    </ul>
+  </div>
+  <div>
+    <h4>Modes</h4>
+    <ul>
+      <li><a href="perform.html">Performance Mode</a></li>
+      <li><a href="gallery.html">Virtual Gallery</a></li>
+      <li><a href="archive.html">Archive Index</a></li>
+      <li><a href="wall.html">Signature Wall</a></li>
+    </ul>
+  </div>
+  <div>
+    <h4>Connect</h4>
+    <ul>
+      <li>Instagram @nycu_gdc</li>
+      <li>Discord</li>
+      <li>itch.io / nycu-gdc</li>
+      <li>Facebook</li>
+    </ul>
+  </div>
+  <div>
+    <h4>Visit Hours</h4>
+    <ul>
+      <li>線上展場 · 24/7 開放</li>
+      <li>實體閉幕 · 06.21 SAT</li>
+      <li>地點 · 交大藝文中心</li>
+      <li>免費入場</li>
+    </ul>
+  </div>
+  <div class="colophon">
+    <span>© 2026 NYCU GDC · Designed by the Showcase Committee</span>
+    <span>Fun to Play · Play to Live · Live for Fun</span>
+  </div>
+</footer>
+
+<div class="spot" id="spot"></div>
+
+<script>
+  // Spotlight cursor
+  const spot = document.getElementById('spot');
+  document.addEventListener('mousemove', (e) => {
+    spot.style.left = e.clientX + 'px';
+    spot.style.top = e.clientY + 'px';
+  });
+  document.addEventListener('mouseleave', () => spot.style.opacity = 0);
+  document.addEventListener('mouseenter', () => spot.style.opacity = 1);
+</script>
+
+</body>
+</html>

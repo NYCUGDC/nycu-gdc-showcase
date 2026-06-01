@@ -1,0 +1,15 @@
+Deep Dragon Fantasy
+
+Round1：龍🐲 by 奕呈、俊叡、Bogay 
+Round2：馬鈴薯工場🛠 by 晉瑞、PotatoFish、Brian
+Round3：屁股吃榴槤🍍 by 長宏、凱鈞、Remi
+Round4：惡臭的幻想🤢 by 建樺、Brian、Johnson
+
+玩法：
+A/D：順時針/逆時針旋轉畫面
+1/2/3：切換技能
+技能1 (Cost: 70)：召喚小龍、自動瞄準射擊、但有生存時間
+技能2 (Cost: 30)：召喚障礙物、可阻擋公主進攻、有血量
+技能3 (Cost: 20)：召喚隕石、可擊飛公主、但沒有傷害
+目標位置+滑鼠右鍵：使用技能
+滑鼠左鍵：收集馬鈴薯
