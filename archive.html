@@ -341,15 +341,17 @@
     border: 1px solid var(--paper-line);
     margin-bottom: 32px;
   }
-  .team-row .p { background: var(--bg-rise); padding: 20px; }
+  .team-row .p { background: var(--bg-rise); padding: 20px; display: flex; flex-direction: column; }
   .team-row .p .role {
     font-family: var(--f-mono);
     font-size: 10px;
     letter-spacing: 0.22em;
     color: var(--paper-faint);
     text-transform: uppercase;
+    line-height: 1.5;
+    min-height: 2lh;
   }
-  .team-row .p .name { font-family: var(--f-serif); font-size: 22px; margin-top: 6px; }
+  .team-row .p .name { font-family: var(--f-serif); font-size: 22px; margin-top: 10px; }
 
   .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
 
