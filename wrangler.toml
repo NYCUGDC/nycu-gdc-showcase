@@ -1,0 +1,13 @@
+name = "nycu-gdc-showcase"
+main = "worker/src/index.js"
+compatibility_date = "2024-11-01"
+
+# Static assets served from public/
+[assets]
+directory = "public"
+binding = "ASSETS"
+
+# Run `wrangler kv namespace create VIEWS_KV` and paste the id below
+[[kv_namespaces]]
+binding = "VIEWS_KV"
+id = "6d5ceb4c5b2848648ef8bb2de0be5e98"

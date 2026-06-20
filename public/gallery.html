@@ -856,7 +856,10 @@
         ${e.image ? '' : `<div class="glyph">${glyph}</div>`}
       </div>
       <div class="modal-body">
-        <div class="mono" style="font-size:11px;letter-spacing:0.22em;color:var(--gdc-orange);text-transform:uppercase;margin-bottom:8px;">${e.no} · ${isConcept ? 'CONCEPT' : 'GAME'}</div>
+        <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:8px;">
+          <div class="mono" style="font-size:11px;letter-spacing:0.22em;color:var(--gdc-orange);text-transform:uppercase;">${e.no} · ${isConcept ? 'CONCEPT' : 'GAME'}</div>
+          <div class="mono" style="font-size:10px;letter-spacing:0.22em;color:var(--paper-faint);text-transform:uppercase;">VIEWS · <span id="modal-views">—</span></div>
+        </div>
         <h3>${e.title}</h3>
         <div class="en">${e.titleEn} · ${isConcept ? e.medium : e.genre}</div>
         <div class="tagline">「${e.tagline}」</div>
@@ -873,6 +876,14 @@
       </div>
     `;
     modal.classList.add('open');
+
+    fetch(`/api/views/${e.id}`, { method: 'POST' })
+      .then(r => r.json())
+      .then(({ views }) => {
+        const el = document.getElementById('modal-views');
+        if (el) el.textContent = views.toLocaleString();
+      })
+      .catch(() => {});
   }
   function closeDetail() { modal.classList.remove('open'); }
   window.closeDetail = closeDetail;

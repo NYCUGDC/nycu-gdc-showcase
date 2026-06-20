@@ -423,6 +423,7 @@
         </div>
         <div class="meta-col">
           ${isConcept ? `${e.designers.length} 位設計者<br>${e.finals} 件成品` : `${e.team.length} 人團隊<br>${e.download.split(' ')[0]}`}
+          <br><span class="row-views" data-id="${e.id}"></span>
         </div>
         <div class="arrow">→</div>
       `;
@@ -442,7 +443,10 @@
       <button class="back" onclick="closeDetail()">← 返回索引</button>
       <div class="detail-hero">
         <div>
-          <div class="label">${e.no} · ${isConcept ? 'CONCEPT' : 'GAME'} / ACT</div>
+          <div class="label" style="display:flex;align-items:baseline;gap:16px;">
+            <span>${e.no} · ${isConcept ? 'CONCEPT' : 'GAME'} / ACT</span>
+            <span id="detail-views" style="font-size:10px;letter-spacing:0.22em;color:var(--paper-faint);text-transform:uppercase;">—</span>
+          </div>
           <h2>${e.title}</h2>
           <div class="en">${e.titleEn} · ${isConcept ? e.medium : e.genre}</div>
           <div class="tag-line">「${e.tagline}」</div>
@@ -514,6 +518,14 @@
     `;
     detail.classList.add('open');
     window.scrollTo(0, 0);
+
+    fetch(`/api/views/${id}`, { method: 'POST' })
+      .then(r => r.json())
+      .then(({ views }) => {
+        const el = document.getElementById('detail-views');
+        if (el) el.textContent = `${views.toLocaleString()} VIEWS`;
+      })
+      .catch(() => {});
   }
 
   function closeDetail() {
@@ -533,6 +545,17 @@
   });
 
   renderList('all');
+
+  // Load all view counts and populate row badges
+  fetch('/api/views')
+    .then(r => r.json())
+    .then(counts => {
+      document.querySelectorAll('.row-views').forEach(el => {
+        const count = counts[el.dataset.id];
+        if (count !== undefined) el.textContent = `${count.toLocaleString()} VIEWS`;
+      });
+    })
+    .catch(() => {});
 
   // Open from hash
   if (location.hash) {
