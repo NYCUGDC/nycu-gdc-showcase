@@ -163,6 +163,19 @@
   }
   .row:hover .arrow { color: var(--gdc-orange); transform: translateX(8px); }
 
+  .view-badge {
+    display: inline-block;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    color: var(--gdc-orange);
+    background: rgba(255,138,61,0.12);
+    border: 1px solid rgba(255,138,61,0.35);
+    padding: 3px 8px;
+    text-transform: uppercase;
+    vertical-align: middle;
+  }
+
   /* Detail page */
   .detail { display: none; padding: 60px var(--pad-edge); }
   .detail.open { display: block; }
@@ -423,7 +436,7 @@
         </div>
         <div class="meta-col">
           ${isConcept ? `${e.designers.length} 位設計者<br>${e.finals} 件成品` : `${e.team.length} 人團隊<br>${e.download.split(' ')[0]}`}
-          <br><span class="row-views" data-id="${e.id}"></span>
+          <br><span class="row-views view-badge" data-id="${e.id}" style="display:none"></span>
         </div>
         <div class="arrow">→</div>
       `;
@@ -445,7 +458,7 @@
         <div>
           <div class="label" style="display:flex;align-items:baseline;gap:16px;">
             <span>${e.no} · ${isConcept ? 'CONCEPT' : 'GAME'} / ACT</span>
-            <span id="detail-views" style="font-size:10px;letter-spacing:0.22em;color:var(--paper-faint);text-transform:uppercase;">—</span>
+            <span id="detail-views" class="view-badge">— VIEWS</span>
           </div>
           <h2>${e.title}</h2>
           <div class="en">${e.titleEn} · ${isConcept ? e.medium : e.genre}</div>
@@ -552,7 +565,10 @@
     .then(counts => {
       document.querySelectorAll('.row-views').forEach(el => {
         const count = counts[el.dataset.id];
-        if (count !== undefined) el.textContent = `${count.toLocaleString()} VIEWS`;
+        if (count !== undefined) {
+          el.textContent = `${count.toLocaleString()} VIEWS`;
+          el.style.display = '';
+        }
       });
     })
     .catch(() => {});

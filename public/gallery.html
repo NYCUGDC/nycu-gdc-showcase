@@ -375,10 +375,14 @@
     margin-top: 4px;
   }
   .plaque .views {
+    display: inline-block;
     font-family: var(--f-mono); font-size: 10px;
-    letter-spacing: 0.22em; color: var(--gdc-orange);
-    opacity: 0.7;
-    margin-top: 6px;
+    letter-spacing: 0.18em; color: var(--gdc-orange);
+    background: rgba(255,138,61,0.12);
+    border: 1px solid rgba(255,138,61,0.35);
+    padding: 3px 8px;
+    margin-top: 8px;
+    text-transform: uppercase;
   }
 
   /* Atrium centerpiece — floating sculpture */
@@ -865,7 +869,7 @@
       <div class="modal-body">
         <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:8px;">
           <div class="mono" style="font-size:11px;letter-spacing:0.22em;color:var(--gdc-orange);text-transform:uppercase;">${e.no} · ${isConcept ? 'CONCEPT' : 'GAME'}</div>
-          <div class="mono" style="font-size:10px;letter-spacing:0.22em;color:var(--paper-faint);text-transform:uppercase;">VIEWS · <span id="modal-views">—</span></div>
+          <span id="modal-views" style="display:inline-block;font-family:var(--f-mono);font-size:10px;letter-spacing:0.18em;color:var(--gdc-orange);background:rgba(255,138,61,0.12);border:1px solid rgba(255,138,61,0.35);padding:3px 10px;text-transform:uppercase;">— VIEWS</span>
         </div>
         <h3>${e.title}</h3>
         <div class="en">${e.titleEn} · ${isConcept ? e.medium : e.genre}</div>
@@ -888,7 +892,7 @@
       .then(r => r.json())
       .then(({ views }) => {
         const el = document.getElementById('modal-views');
-        if (el) el.textContent = views.toLocaleString();
+        if (el) el.textContent = `${views.toLocaleString()} VIEWS`;
       })
       .catch(() => {});
   }
@@ -903,7 +907,7 @@
     .then(counts => {
       for (const [id, count] of Object.entries(counts)) {
         const el = document.getElementById(`plaque-views-${id}`);
-        if (el) el.textContent = `VIEWS · ${count.toLocaleString()}`;
+        if (el) el.textContent = `${count.toLocaleString()} VIEWS`;
       }
     })
     .catch(() => {});
