@@ -374,6 +374,12 @@
     letter-spacing: 0.18em; color: var(--paper-faint);
     margin-top: 4px;
   }
+  .plaque .views {
+    font-family: var(--f-mono); font-size: 10px;
+    letter-spacing: 0.22em; color: var(--gdc-orange);
+    opacity: 0.7;
+    margin-top: 6px;
+  }
 
   /* Atrium centerpiece — floating sculpture */
   .totem {
@@ -716,6 +722,7 @@
         <div class="num">${e.no} · ${isConcept ? 'CONCEPT' : 'GAME'}</div>
         <div class="ttl">${e.title}</div>
         <div class="meta">${e.titleEn} · ${isConcept ? e.medium : e.genre}</div>
+        <div class="views" id="plaque-views-${e.id}"></div>
       </div>
     `;
     div.addEventListener('click', (ev) => { ev.stopPropagation(); openDetail(e); });
@@ -890,6 +897,16 @@
   modal.addEventListener('click', (e) => { if (e.target === modal) closeDetail(); });
 
   update();
+
+  fetch('/api/views')
+    .then(r => r.json())
+    .then(counts => {
+      for (const [id, count] of Object.entries(counts)) {
+        const el = document.getElementById(`plaque-views-${id}`);
+        if (el) el.textContent = `VIEWS · ${count.toLocaleString()}`;
+      }
+    })
+    .catch(() => {});
 </script>
 
 </body>
