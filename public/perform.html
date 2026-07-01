@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
@@ -498,7 +498,12 @@
     border: 1px solid rgba(255,255,255,0.1);
     overflow: hidden;
     grid-column: span 12;
+    display: block;
+    text-decoration: none;
   }
+  .play-frame.is-link { cursor: pointer; }
+  .play-frame.is-link:hover { border-color: rgba(255,138,61,0.45); }
+  .play-frame.is-disabled { cursor: default; }
   .play-frame::before {
     content: "";
     position: absolute; inset: 0;
@@ -531,6 +536,12 @@
     position: absolute; top: 24px; right: 24px;
     font-family: var(--f-mono); font-size: 11px;
     letter-spacing: 0.22em; color: var(--gdc-orange);
+  }
+  .play-frame .subcode {
+    position: absolute; top: 24px; left: 24px;
+    font-family: var(--f-mono); font-size: 11px;
+    letter-spacing: 0.22em; color: var(--paper-faint);
+    text-transform: uppercase;
   }
   .play-frame .corners > span {
     position: absolute;
@@ -989,6 +1000,62 @@
     position: relative;
   }
 
+  .video-modal {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    background: rgba(0,0,0,0.82);
+    backdrop-filter: blur(10px);
+    z-index: 200;
+  }
+  .video-modal.open { display: flex; }
+  .video-modal .video-panel {
+    width: min(1200px, 100%);
+    background: #07070b;
+    border: 1px solid rgba(255,255,255,0.16);
+    box-shadow: 0 24px 80px rgba(0,0,0,0.45);
+  }
+  .video-modal .video-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--paper-dim);
+  }
+  .video-modal .video-close {
+    appearance: none;
+    border: 1px solid rgba(255,255,255,0.16);
+    background: transparent;
+    color: var(--paper);
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    font: inherit;
+  }
+  .video-modal .video-close:hover {
+    border-color: var(--gdc-orange);
+    color: var(--gdc-orange);
+  }
+  .video-modal .video-embed {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: #000;
+  }
+  .video-modal .video-embed iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+
   /* Side controls */
   .side-controls {
     position: fixed; right: 16px; top: 50%;
@@ -1036,6 +1103,16 @@
   <button title="切到展場" onclick="location.href='gallery.html'">⊞</button>
 </div>
 
+<div class="video-modal" id="video-modal" aria-hidden="true">
+  <div class="video-panel">
+    <div class="video-topbar">
+      <div id="video-title">TRAILER</div>
+      <button class="video-close" id="video-close" type="button" aria-label="Close trailer">×</button>
+    </div>
+    <div class="video-embed" id="video-embed"></div>
+  </div>
+</div>
+
 <!-- ===== OVERTURE: curtain rising ===== -->
 <section class="overture scene act-anchor" data-act="00" data-name="OVERTURE">
   <div class="curtain-l"></div>
@@ -1080,10 +1157,12 @@
 
   // Each game gets a chosen "scene type" for variety
   const sceneTypes = {
-    'lobotomy-twilight': 'cinematic',
-    'deep-dragon-fantasy': 'flood',
-    'barber-taiwanese': 'concept',
-    'snow-temple': 'concept',
+    'ashlight-ii': 'cinematic',
+    'astral-siphon': 'flood',
+    'do-a-barrel-roll': 'paper',
+    'elements-habitat': 'soft',
+    'afterglow': 'audio',
+    'industrial-cafe': 'concept',
   };
 
   const slateVariants = ['', 'flash', 'blue', '', 'flash', '', 'blue', '', '', 'flash'];
@@ -1242,6 +1321,10 @@
 
   function renderBeats(e) {
     const isConcept = e.type === 'concept';
+    const keyVisual = e.keyVisual || (e.gallery && e.gallery[0]) || e.image || '';
+    const trailer = e.trailer || '';
+    const trailerLabel = e.trailerLabel || 'Watch Trailer';
+    const trailerMeta = trailer ? 'REC · TRAILER' : 'REC · SOON';
 
     let body = '';
     if (!isConcept) {
@@ -1254,7 +1337,7 @@
               <div class="quote">${e.concept}</div>
             </div>
             <div class="beats-side" style="display:grid;grid-template-rows:1fr;gap:16px;">
-              <div class="poster" style="--p-a:${e.palette[0]};--p-b:${e.palette[1]};${e.gallery && e.gallery[1] ? `background-image:linear-gradient(135deg, ${e.palette[0]}55, ${e.palette[1]}55), url('${e.gallery[1]}');` : ''}">
+              <div class="poster" style="--p-a:${e.palette[0]};--p-b:${e.palette[1]};${keyVisual ? `background-image:linear-gradient(135deg, ${e.palette[0]}55, ${e.palette[1]}55), url('${keyVisual}');` : ''}">
                 <div class="stripes"></div>
                 <div class="pill">KEY VISUAL · ${e.titleEn}</div>
                 <div class="center-mark">${e.no}</div>
@@ -1262,12 +1345,13 @@
               </div>
             </div>
 
-            <div class="play-frame" style="margin-top:24px;${e.gallery && e.gallery[1] ? `background-image:linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.45)), url('${e.gallery[1]}');background-size:cover;background-position:center;` : ''}">
+            <a class="play-frame ${trailer ? 'is-link' : 'is-disabled'}" ${trailer ? `href="${trailer}" data-trailer="${trailer}" data-title="${e.titleEn}"` : 'aria-disabled="true"'} style="margin-top:24px;${keyVisual ? `background-image:linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.45)), url('${keyVisual}');background-size:cover;background-position:center;` : ''}">
               <div class="corners"><span></span><span></span><span></span><span></span></div>
-              <div class="timecode">REC · 00:30</div>
-              <div class="play-btn"><div class="ring">▶</div></div>
-              <div class="lbl">GAMEPLAY · ${e.titleEn}</div>
-            </div>
+              <div class="subcode">${trailerLabel}</div>
+              <div class="timecode">${trailerMeta}</div>
+              <div class="play-btn"><div class="ring">${trailer ? '▶' : '·'}</div></div>
+              <div class="lbl">${trailer ? `TRAILER · ${e.titleEn}` : `TRAILER SOON · ${e.titleEn}`}</div>
+            </a>
 
             <div class="beats-text" style="margin-top:48px;">
               <h3>怎麼玩</h3>
@@ -1363,8 +1447,8 @@
     html += renderHero(e, variant);
     html += renderBeats(e);
 
-    // Intermission between games and concepts (after the 2 games)
-    if (i === 1) {
+    // Intermission between games and concepts (after the 5 games)
+    if (i === 4) {
       html += `
         <section class="intermission">
           <div>
@@ -1436,6 +1520,74 @@
     const { list, idx } = near();
     window.scrollTo({ top: list[Math.min(list.length - 1, idx + 1)].offsetTop, behavior: 'smooth' });
   };
+
+  // Trailer modal
+  const videoModal = document.getElementById('video-modal');
+  const videoEmbed = document.getElementById('video-embed');
+  const videoTitle = document.getElementById('video-title');
+  const videoClose = document.getElementById('video-close');
+
+  function toEmbedUrl(url) {
+    if (!url) return '';
+    try {
+      const u = new URL(url);
+      if (u.hostname.includes('youtube.com')) {
+        const id = u.searchParams.get('v');
+        return id ? `https://www.youtube.com/embed/${id}?autoplay=1&rel=0` : '';
+      }
+      if (u.hostname.includes('youtu.be')) {
+        const id = u.pathname.replace(/^\/+/, '');
+        return id ? `https://www.youtube.com/embed/${id}?autoplay=1&rel=0` : '';
+      }
+      if (u.hostname.includes('drive.google.com')) {
+        const m = u.pathname.match(/\/file\/d\/([^/]+)/);
+        return m ? `https://drive.google.com/file/d/${m[1]}/preview` : '';
+      }
+    } catch (_) {
+      return '';
+    }
+    return '';
+  }
+
+  function closeVideoModal() {
+    if (!videoModal || !videoEmbed) return;
+    videoModal.classList.remove('open');
+    videoModal.setAttribute('aria-hidden', 'true');
+    videoEmbed.innerHTML = '';
+  }
+
+  function openVideoModal(url, title) {
+    const embed = toEmbedUrl(url);
+    if (!embed) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    if (!videoModal || !videoEmbed || !videoTitle) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    videoTitle.textContent = `TRAILER · ${title || 'SHOWCASE'}`;
+    videoEmbed.innerHTML = `<iframe src="${embed}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+    videoModal.classList.add('open');
+    videoModal.setAttribute('aria-hidden', 'false');
+  }
+
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest('.play-frame.is-link[data-trailer]');
+    if (!link) return;
+    e.preventDefault();
+    openVideoModal(link.dataset.trailer, link.dataset.title);
+  });
+
+  if (videoClose) videoClose.addEventListener('click', closeVideoModal);
+  if (videoModal) {
+    videoModal.addEventListener('click', (e) => {
+      if (e.target === videoModal) closeVideoModal();
+    });
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeVideoModal();
+  });
 
   // Intermission timer (decorative loop)
   const timer = document.getElementById('im-timer');

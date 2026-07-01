@@ -621,14 +621,14 @@
 
     <!-- Arches -->
     <div class="arch" style="left: 2450px;"></div>
-    <div class="arch" style="left: 3650px;"></div>
+    <div class="arch" style="left: 6100px;"></div>
 
     <!-- Banner over rooms -->
     <div class="banner" style="left: 1200px; top: -180px; transform: translateX(-50%) rotateX(-12deg);">
       <div class="b1">— ROOM I —</div>
       <div class="b2">遊戲館 / GAMES</div>
     </div>
-    <div class="banner" style="left: 4850px; top: -180px; transform: translateX(-50%) rotateX(-12deg);">
+    <div class="banner" style="left: 7100px; top: -180px; transform: translateX(-50%) rotateX(-12deg);">
       <div class="b1">— ROOM II —</div>
       <div class="b2">概念館 / CONCEPTS</div>
     </div>
@@ -645,8 +645,8 @@
     <kbd>Click</kbd> 看詳細 · <kbd>Home</kbd> 起點
   </div>
   <div class="minimap" id="minimap">
-    <div class="seg" style="left: 42%;"></div>
-    <div class="seg" style="left: 60%;"></div>
+    <div class="seg" style="left: 55%;"></div>
+    <div class="seg" style="left: 66%;"></div>
     <div class="room-l" style="left: 4%;">ROOM I · 遊戲館</div>
     <div class="room-l" style="left: 44%;">ATRIUM</div>
     <div class="room-l" style="left: 62%;">ROOM II · 概念館</div>
@@ -671,7 +671,7 @@
   const plinthsEl = document.getElementById('plinths');
   const minimap = document.getElementById('minimap');
   const WORLD_MIN = -400;
-  const WORLD_MAX = 6400;
+  const WORLD_MAX = 8600;
   const WORLD_SPAN = WORLD_MAX - WORLD_MIN;
 
   // Glyph shown big in each frame (visual signature)
@@ -742,6 +742,9 @@
   const gameLayout = [
     { x: 700,  z: -140, tilt: 'right', w: 520, h: 640 },
     { x: 1750, z:  140, tilt: 'left',  w: 520, h: 640 },
+    { x: 2800, z:  -60, tilt: 'right', w: 500, h: 620 },
+    { x: 3850, z:  120, tilt: 'left',  w: 500, h: 620 },
+    { x: 5000, z:  -40, tilt: 'right', w: 540, h: 660 },
   ];
   games.forEach((e, i) => {
     const layout = gameLayout[i] || { x: 700 + i * 1000, z: 0, tilt: 'center' };
@@ -750,11 +753,11 @@
 
   // === ROOM II: concepts (bigger, centered) ===
   const conceptLayout = [
-    { x: 4300, z:  -90, tilt: 'right', w: 600, h: 720 },
-    { x: 5400, z:  120, tilt: 'left',  w: 600, h: 720 },
+    { x: 6600, z:  -90, tilt: 'right', w: 600, h: 720 },
+    { x: 7700, z:  120, tilt: 'left',  w: 600, h: 720 },
   ];
   concepts.forEach((e, i) => {
-    const layout = conceptLayout[i] || { x: 4300 + i * 1100, z: 0, tilt: 'center' };
+    const layout = conceptLayout[i] || { x: 6600 + i * 1100, z: 0, tilt: 'center' };
     makeArt(e, layout.x, layout.z, layout);
   });
 
@@ -773,8 +776,8 @@
     const ratio = Math.max(0, Math.min(1, (camX - WORLD_MIN) / WORLD_SPAN));
     youDot.style.left = (ratio * 100) + '%';
     posReadout.textContent = `X ${String(Math.round(camX)).padStart(4,'0')} · Z ${String(Math.round(camY)).padStart(4,'0')}`;
-    if (camX < 2450) roomName.textContent = 'ROOM I · 遊戲館';
-    else if (camX < 3650) roomName.textContent = 'ATRIUM · 中庭';
+    if (camX < 5200) roomName.textContent = 'ROOM I · 遊戲館';
+    else if (camX < 6200) roomName.textContent = 'ATRIUM · 中庭';
     else roomName.textContent = 'ROOM II · 概念設計館';
   }
   function setCam(x, y) {

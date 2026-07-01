@@ -1,8 +1,10 @@
 const VALID_IDS = new Set([
-  'lobotomy-twilight',
-  'deep-dragon-fantasy',
-  'barber-taiwanese',
-  'snow-temple',
+  'ashlight-ii',
+  'astral-siphon',
+  'do-a-barrel-roll',
+  'elements-habitat',
+  'afterglow',
+  'industrial-cafe',
 ]);
 
 const RATE_LIMIT_MAX = 60;    // max views per IP per project per hour
