@@ -4,16 +4,32 @@ NYCU GDC 期末成果展示網站。
 
 ## 🌐 網站網址
 
-**https://nycugdc.github.io/nycu-gdc-showcase/**
+**https://showcase.nycu-gdc.org/**
 
-## 開發與部署
+## 架構
 
-純靜態網站（HTML / CSS / JS），透過 GitHub Pages 從 `main` 分支根目錄自動部署。
+- 靜態頁面放在 `public/`
+- Cloudflare Worker（`worker/src/index.js`）處理 API 請求（如作品瀏覽次數統計）
+- 瀏覽次數儲存於 Cloudflare KV（`VIEWS_KV`）
+- 透過 [Wrangler](https://developers.cloudflare.com/workers/wrangler/) 部署
 
-本機修改後推上去即可自動重新部署：
+## 開發
+
+需先安裝 Wrangler CLI：
 
 ```bash
-git add .
-git commit -m "你的修改說明"
-git push
+npm install -g wrangler
+wrangler login
+```
+
+本機啟動開發伺服器：
+
+```bash
+wrangler dev
+```
+
+## 部署
+
+```bash
+wrangler deploy
 ```
